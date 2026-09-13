@@ -1,0 +1,24 @@
+{
+  "name": "Pulse — cabinet médical en ligne",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "remoteUser": "node",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Cabinet Pulse",
+      "onAutoForward": "openBrowser",
+      "protocol": "http"
+    }
+  },
+  "postCreateCommand": "npm ci && npm run build",
+  "postStartCommand": "node .devcontainer/start.mjs",
+  "waitFor": "postCreateCommand",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "files.exclude": { "node_modules": true },
+        "editor.formatOnSave": true
+      }
+    }
+  }
+}
