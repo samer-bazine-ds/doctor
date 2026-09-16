@@ -25,7 +25,7 @@ remplacer par ceux du cabinet. Les prestations d’exemple sont à 5 000 DA, 3 0
 
 ## Une arborescence volontairement simple
 
-Les cinq fichiers qui constituent l’application sont :
+Les fichiers qui constituent l’application sont regroupés par responsabilité :
 
 | Fichier         | Rôle                                                               |
 | --------------- | ------------------------------------------------------------------ |
@@ -38,7 +38,7 @@ Les cinq fichiers qui constituent l’application sont :
 Les autres fichiers servent au fonctionnement du projet :
 
 - `package.json` et `package-lock.json` : dépendances et commandes npm.
-- `tests/` : trois fichiers pour vérifier le planning, l’API et le navigateur.
+- `tests/` : tests du moteur de planning, de l’API et du navigateur.
 - `.devcontainer/` : deux fichiers pour le test en ligne avec GitHub Codespaces.
 - `.env.example` : explications des variables de configuration, sans mot de passe.
 - `.gitignore` et `.gitattributes` : fichiers exclus de Git et fins de ligne.
@@ -46,6 +46,25 @@ Les autres fichiers servent au fonctionnement du projet :
 Les dossiers `node_modules/`, `dist/`, `data/` et `artifacts/` sont générés. Ils ne font
 pas partie des sources à publier sur GitHub. `data/` contient les données privées : ne le
 supprimez pas si vous souhaitez conserver les rendez-vous.
+
+### Structure recommandée
+
+```text
+index.html          Entrée HTML
+server.js           Serveur, API et persistance
+scheduling.js       Règles métier partagées
+src/                Interface React et styles
+tests/              Tests unitaires, intégration et navigateur
+.devcontainer/      Configuration Codespaces uniquement
+data/               Données locales générées, à conserver mais jamais publier
+dist/               Build généré, recréé par npm run build
+artifacts/          Captures et résultats générés par les tests navigateur
+```
+
+Cette structure est volontairement courte : `server.js` et `scheduling.js` restent à la
+racine afin que les commandes Node et les tests puissent les importer directement. Les
+déplacer dans de nouveaux sous-dossiers ajouterait des chemins relatifs sans réduire le
+nombre réel de fichiers.
 
 ## Retrouver le code d’une page
 

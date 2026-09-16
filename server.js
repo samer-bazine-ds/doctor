@@ -32,6 +32,71 @@ function configuredPublicOrigin(env = process.env) {
   return "";
 }
 
+function googleConfigured() {
+  return Boolean(
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && publicOrigin,
+  );
+}
+
+function googleRedirectUri() {
+  return `${publicOrigin}/auth/google/callback`;
+}
+
+function googleEventBody(a, doctor) {
+  const timezone = a.timezone || doctor.timezone || "Africa/Algiers";
+  return {
+    summary: `Rendez-vous avec ${doctor.name}`,
+    location: doctor.address,
+    description:
+      "Consultation au cabinet. Consultez votre lien privé Pulse pour suivre l’horaire estimé.",
+    start: { dateTime: `${a.date}T${a.scheduledStart}:00`, timeZone: timezone },
+    end: {
+      dateTime: `${a.date}T${clock(minutes(a.scheduledStart) + a.duration)}:00`,
+      timeZone: timezone,
+    },
+  };
+}
+
+async function googleAccessToken(a) {
+  if (!a.googleRefreshToken) return null;
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      refresh_token: a.googleRefreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  if (!response.ok) throw Error("La connexion Google Agenda a expiré.");
+  return (await response.json()).access_token;
+}
+
+async function syncGoogleAppointment(a, remove = false) {
+  if (!googleConfigured() || !a.googleRefreshToken) return;
+  const accessToken = await googleAccessToken(a);
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events${a.googleEventId ? `/${a.googleEventId}` : ""}`;
+  const response = await fetch(url, {
+    method: remove ? "DELETE" : a.googleEventId ? "PUT" : "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    ...(remove ? {} : { body: JSON.stringify(googleEventBody(a, settings())) }),
+  });
+  if (!response.ok && response.status !== 404)
+    throw Error("Google Agenda n’a pas pu être synchronisé.");
+  if (remove || response.status === 404) {
+    a.googleEventId = null;
+    if (remove) a.googleRefreshToken = null;
+  } else if (!a.googleEventId) {
+    a.googleEventId = (await response.json()).id;
+  }
+  put("appointments", a);
+  save();
+}
+
 function isAllowedOrigin(headers, publicOrigin = "") {
   if (!headers.origin) return true;
   try {
@@ -48,6 +113,7 @@ function isAllowedOrigin(headers, publicOrigin = "") {
   }
 }
 
+// Express serves the API and, in production, the compiled React application.
 const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "32kb" }));
@@ -74,6 +140,7 @@ app.use((req, res, next) => {
 // PERSISTANCE : base privée locale, ignorée par Git.
 fs.mkdirSync("data", { recursive: true });
 const SQL = await initSqlJs();
+// sql.js keeps SQLite in memory; save() persists it to data/clinic.sqlite.
 const db = new SQL.Database(
   fs.existsSync("data/clinic.sqlite") ? fs.readFileSync("data/clinic.sqlite") : undefined,
 );
@@ -138,9 +205,17 @@ if (!all("settings").length) {
     address: "Alger, Algérie",
     phone: "+213 555 12 34 56",
     email: "contact@cabinet-benali.example",
+    socials: {
+      instagram: "",
+      facebook: "",
+      linkedin: "",
+      whatsapp: "",
+    },
     days: defaultDays,
     holidays: [],
     reminders: [24, 2],
+    minuteReminders: [10, 5],
+    earlyArrivalOptions: [5, 10, 15],
     currency: "DZD",
     locale: "fr-DZ",
     regionalVersion: 2,
@@ -172,6 +247,44 @@ if (!all("settings").length) {
   save();
 }
 const settings = () => one("settings", "clinic");
+
+// Keep older clinic databases compatible with the social contact fields.
+const clinicSettings = settings();
+if (!clinicSettings.socials) {
+  clinicSettings.socials = { instagram: "", facebook: "", linkedin: "", whatsapp: "" };
+  put("settings", clinicSettings);
+  save();
+}
+
+function nextPatientNumber() {
+  const numbers = all("patients")
+    .map((patient) => Number(patient.patientNumber))
+    .filter((number) => Number.isInteger(number) && number > 0);
+  return String((numbers.length ? Math.max(...numbers) : 0) + 1).padStart(4, "0");
+}
+
+// Les anciens patients reçoivent un numéro stable avant toute nouvelle réservation.
+let patientNumberChanged = false;
+for (const patient of all("patients")) {
+  if (!/^\d{4}$/.test(patient.patientNumber || "")) {
+    patient.patientNumber = nextPatientNumber();
+    put("patients", patient);
+    patientNumberChanged = true;
+  }
+}
+if (patientNumberChanged) save();
+
+// Les rendez-vous existants reçoivent aussi un code d’annulation persistant.
+let cancellationCodeChanged = false;
+for (const appointment of all("appointments")) {
+  if (!appointment.cancellationCode) {
+    appointment.cancellationCode =
+      "ANN-" + crypto.randomBytes(4).toString("hex").toUpperCase();
+    put("appointments", appointment);
+    cancellationCodeChanged = true;
+  }
+}
+if (cancellationCodeChanged) save();
 
 /**
  * Migration unique des anciens exemples vers l’Algérie.
@@ -309,6 +422,7 @@ if (!db.exec("SELECT id FROM users LIMIT 1").length) {
 }
 // TEMPS RÉEL : les événements signalent un changement sans diffuser de données personnelles.
 const clients = new Set();
+// Notify browser clients that they should reload their authorized data.
 function emit() {
   for (const c of clients) c.res.write("event: update\ndata: {}\n\n");
   io.emit("update", {});
@@ -323,17 +437,22 @@ function audit(req, action, before, after) {
     after,
   });
 }
-function notify(a, message) {
+function notify(a, message, recipient = "PATIENT", extra = {}) {
   put("notifications", {
     id: id(),
     appointmentId: a.id,
     patientId: a.patientId,
     message,
+    recipient,
     createdAt: new Date().toISOString(),
     read: false,
     channel: "in-app",
     emailStatus: process.env.EMAIL_WEBHOOK ? "pending" : "not-configured",
+    ...extra,
   });
+}
+function notifyStaff(a, message, extra = {}) {
+  notify(a, message, "STAFF", extra);
 }
 // La validation et l’écriture sont exécutées ensemble pour empêcher les doubles réservations.
 function transaction(fn) {
@@ -572,12 +691,18 @@ function book(req, publicBooking) {
     let p;
     if (!publicBooking && b.patientId) p = one("patients", b.patientId);
     if (!p) {
-      p = { ...patientInput(b), id: id(), createdAt: new Date().toISOString() };
+      p = {
+        ...patientInput(b),
+        id: id(),
+        patientNumber: nextPatientNumber(),
+        createdAt: new Date().toISOString(),
+      };
       put("patients", p);
     }
     const a = {
       id: id(),
       number: "PLS-" + crypto.randomBytes(3).toString("hex").toUpperCase(),
+      cancellationCode: "ANN-" + crypto.randomBytes(4).toString("hex").toUpperCase(),
       accessToken: crypto.randomBytes(24).toString("hex"),
       patientId: p.id,
       doctorId: "clinic",
@@ -618,7 +743,12 @@ app.post(
   limit,
   route((req, res) => {
     const a = book(req, true);
-    res.json({ id: a.id, token: a.accessToken, number: a.number });
+    res.json({
+      id: a.id,
+      token: a.accessToken,
+      number: a.number,
+      cancellationCode: a.cancellationCode,
+    });
   }),
 );
 // Un patient doit utiliser son lien privé, même si son e-mail correspond à un compte.
@@ -629,6 +759,63 @@ function canView(req, a) {
       (req.user && ["ADMIN", "DOCTOR", "SECRETARIAT"].includes(req.user.role)))
   );
 }
+const googleStates = new Map();
+app.get("/auth/google/start/:id", (req, res) => {
+  const a = one("appointments", req.params.id);
+  if (!googleConfigured())
+    return res.status(503).send("Google Agenda n’est pas configuré.");
+  if (!canView(req, a)) return res.status(404).send("Rendez-vous introuvable.");
+  const state = crypto.randomBytes(24).toString("hex");
+  googleStates.set(state, {
+    id: a.id,
+    token: req.query.token,
+    expires: Date.now() + 10 * 60 * 1000,
+  });
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    redirect_uri: googleRedirectUri(),
+    response_type: "code",
+    access_type: "offline",
+    prompt: "consent",
+    scope: "https://www.googleapis.com/auth/calendar.events",
+    state,
+  });
+  res.redirect("https://accounts.google.com/o/oauth2/v2/auth?" + params);
+});
+app.get("/auth/google/callback", async (req, res) => {
+  const saved = googleStates.get(req.query.state);
+  googleStates.delete(req.query.state);
+  if (!saved || saved.expires < Date.now() || !req.query.code)
+    return res.status(400).send("Connexion Google Agenda invalide ou expirée.");
+  try {
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code: req.query.code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: googleRedirectUri(),
+        grant_type: "authorization_code",
+      }),
+    });
+    if (!tokenResponse.ok) throw Error("Le code Google est invalide.");
+    const tokens = await tokenResponse.json();
+    const a = one("appointments", saved.id);
+    if (!a || !tokens.refresh_token)
+      throw Error("Google n’a pas fourni de connexion durable.");
+    a.googleRefreshToken = tokens.refresh_token;
+    a.googleEventId = null;
+    put("appointments", a);
+    save();
+    await syncGoogleAppointment(a);
+    res.redirect(
+      `/appointment/${a.id}?token=${encodeURIComponent(saved.token)}&google=connected`,
+    );
+  } catch (error) {
+    res.status(400).send(error.message);
+  }
+});
 app.get(
   "/api/appointment/:id",
   route((req, res) => {
@@ -637,13 +824,24 @@ app.get(
       return res.status(404).json({
         error: "Rendez-vous introuvable. Utilisez votre lien privé de confirmation.",
       });
+    const patient = one("patients", a.patientId);
+    if (patient && !/^\d{4}$/.test(patient.patientNumber || "")) {
+      patient.patientNumber = nextPatientNumber();
+      put("patients", patient);
+      save();
+    }
     const { accessToken, notes, ...safe } = a;
     res.json({
       ...safe,
-      patient: one("patients", a.patientId),
+      patient,
       doctor: settings(),
       service: one("services", a.serviceId),
-      notifications: all("notifications").filter((n) => n.appointmentId === a.id),
+      googleCalendar: googleConfigured()
+        ? { configured: true, connected: Boolean(a.googleEventId) }
+        : { configured: false, connected: false },
+      notifications: all("notifications").filter(
+        (n) => n.appointmentId === a.id && n.recipient !== "STAFF",
+      ),
     });
   }),
 );
@@ -655,6 +853,9 @@ app.post(
       return res.status(404).json({ error: "Rendez-vous introuvable." });
     if (inactive.includes(a.status) || a.status === "IN_CONSULTATION")
       throw Error("Ce rendez-vous ne peut plus être annulé.");
+    const at = a.scheduledStartAt || zonedTimestamp(a.date, a.scheduledStart, a.timezone || settings().timezone);
+    if (Date.parse(at) - Date.now() < 24 * 60 * 60 * 1000)
+      throw Error("L’annulation est possible uniquement au moins 24 heures avant le rendez-vous.");
     transaction(() => {
       const before = { ...a };
       a.status = "CANCELLED";
@@ -663,7 +864,36 @@ app.post(
       notify(a, "Votre rendez-vous a été annulé.");
       audit(req, "Rendez-vous annulé", before, a);
     });
+    syncGoogleAppointment(a, true).catch((error) =>
+      console.error("Échec de la suppression Google Agenda :", error.message),
+    );
     res.json({ ok: true });
+  }),
+);
+app.post(
+  "/api/cancel-by-code",
+  limit,
+  route((req, res) => {
+    const code = clean(req.body.cancellationCode, 40).toUpperCase();
+    const a = all("appointments").find((item) => item.cancellationCode === code);
+    if (!a) throw Error("Code d’annulation invalide ou rendez-vous introuvable.");
+    if (inactive.includes(a.status) || a.status === "IN_CONSULTATION")
+      throw Error("Ce rendez-vous ne peut plus être annulé.");
+    const at = a.scheduledStartAt || zonedTimestamp(a.date, a.scheduledStart, a.timezone || settings().timezone);
+    if (Date.parse(at) - Date.now() < 24 * 60 * 60 * 1000)
+      throw Error("L’annulation est possible uniquement au moins 24 heures avant le rendez-vous.");
+    transaction(() => {
+      const before = { ...a };
+      a.status = "CANCELLED";
+      a.updatedAt = new Date().toISOString();
+      put("appointments", a);
+      notify(a, "Votre rendez-vous a été annulé avec votre code d’annulation.");
+      audit(req, "Rendez-vous annulé avec le code patient", before, a);
+    });
+    syncGoogleAppointment(a, true).catch((error) =>
+      console.error("Échec de la suppression Google Agenda :", error.message),
+    );
+    res.json({ ok: true, message: "Votre rendez-vous a été annulé." });
   }),
 );
 app.get("/api/events", (req, res) => {
@@ -735,6 +965,7 @@ app.patch(
   requireAuth,
   staff,
   route((req, res) => {
+    let updatedAppointment;
     transaction(() => {
       const a = one("appointments", req.params.id);
       if (!a) throw Error("Rendez-vous introuvable.");
@@ -811,8 +1042,60 @@ app.patch(
           ? "Le médecin est prêt à vous recevoir."
           : `Votre rendez-vous a été mis à jour : ${statusLabel(a.status).toLowerCase()}. Horaire estimé : ${a.estimatedStart}.`,
       );
+      updatedAppointment = a;
     });
+    if (updatedAppointment?.googleRefreshToken)
+      syncGoogleAppointment(updatedAppointment).catch((error) =>
+        console.error("Échec de la mise à jour Google Agenda :", error.message),
+      );
     res.json({ ok: true });
+  }),
+);
+app.post(
+  "/api/appointments/:id/early-arrival",
+  requireAuth,
+  staff,
+  route((req, res) => {
+    const a = one("appointments", req.params.id),
+      minutesEarly = Number(req.body.minutes),
+      s = settings();
+    if (!a) throw Error("Rendez-vous introuvable.");
+    if (!(s.earlyArrivalOptions || [5, 10, 15]).includes(minutesEarly))
+      throw Error("Choisissez une avance autorisée par le cabinet.");
+    if (a.status !== "COMPLETED" || !a.actualEnd)
+      throw Error("Terminez d’abord la consultation en cours.");
+    const next = all("appointments")
+      .filter(
+        (item) =>
+          item.date === a.date &&
+          item.id !== a.id &&
+          !inactive.includes(item.status) &&
+          item.scheduledStart > a.scheduledStart,
+      )
+      .sort((left, right) => left.scheduledStart.localeCompare(right.scheduledStart))[0];
+    if (!next) throw Error("Aucun patient suivant à prévenir.");
+    if (
+      all("notifications").some(
+        (n) =>
+          n.appointmentId === next.id &&
+          n.kind === "EARLY_ARRIVAL" &&
+          n.minutesEarly === minutesEarly,
+      )
+    )
+      throw Error("Ce patient a déjà reçu cette proposition.");
+    transaction(() => {
+      notify(
+        next,
+        `Le cabinet a terminé plus tôt. Vous pouvez arriver jusqu’à ${minutesEarly} minutes avant votre rendez-vous si cela vous convient. Sinon, gardez simplement votre horaire de ${next.scheduledStart}.`,
+        "PATIENT",
+        { kind: "EARLY_ARRIVAL", minutesEarly },
+      );
+      audit(req, "Patient suivant prévenu d’une arrivée anticipée", null, {
+        appointmentId: next.id,
+        minutesEarly,
+      });
+    });
+    res.json({ ok: true, appointmentId: next.id });
   }),
 );
 app.post(
@@ -893,6 +1176,14 @@ app.put(
       address: clean(b.address) || s.address,
       phone: clean(b.phone, 30) || s.phone,
       email: clean(b.email, 160) || s.email,
+      socials: Object.fromEntries(
+        ["instagram", "facebook", "linkedin", "whatsapp"].map((network) => {
+          const value = clean(b.socials?.[network], 300);
+          if (value && !/^https:\/\//i.test(value))
+            throw Error(`Le lien ${network} doit commencer par https://.`);
+          return [network, value];
+        }),
+      ),
       duration: Number(b.duration),
       timezone: b.timezone,
       days: b.days,
@@ -900,6 +1191,12 @@ app.put(
       reminders: Array.isArray(b.reminders)
         ? b.reminders.filter((n) => Number.isFinite(n) && n > 0 && n <= 168)
         : s.reminders,
+      minuteReminders: Array.isArray(b.minuteReminders)
+        ? b.minuteReminders.filter((n) => [5, 10, 15].includes(Number(n))).map(Number)
+        : s.minuteReminders || [10, 5],
+      earlyArrivalOptions: Array.isArray(b.earlyArrivalOptions)
+        ? b.earlyArrivalOptions.filter((n) => [5, 10, 15].includes(Number(n))).map(Number)
+        : s.earlyArrivalOptions || [5, 10, 15],
     };
     for (const a of all("appointments").filter(
       (a) => !inactive.includes(a.status) && a.date >= localDate(s.timezone),
@@ -950,6 +1247,31 @@ app.post("/api/notifications/read", requireAuth, staff, (req, res) => {
   );
   res.json({ ok: true });
 });
+app.post(
+  "/api/data/clear",
+  requireAuth,
+  staff,
+  limit,
+  route((req, res) => {
+    const password = String(req.body.password || "");
+    const row = db.exec("SELECT salt,hash FROM users WHERE id=?", [req.user.id]);
+    if (!row.length) throw Error("Compte introuvable.");
+    const account = Object.fromEntries(
+      row[0].columns.map((key, index) => [key, row[0].values[0][index]]),
+    );
+    const valid = crypto.timingSafeEqual(
+      Buffer.from(hash(password, account.salt), "hex"),
+      Buffer.from(account.hash, "hex"),
+    );
+    if (!valid) throw Error("Mot de passe incorrect. Les données n’ont pas été supprimées.");
+    transaction(() => {
+      for (const kind of ["patients", "appointments", "notifications", "audit"])
+        db.run("DELETE FROM records WHERE kind=?", [kind]);
+      db.run("DELETE FROM sessions");
+    });
+    res.json({ ok: true, message: "Les patients, rendez-vous, notifications et journaux ont été supprimés." });
+  }),
+);
 app.get("/api/users", requireAuth, admin, (req, res) => {
   const r = db.exec("SELECT id,name,email,role FROM users");
   res.json(
@@ -991,7 +1313,7 @@ app.post(
     res.json({ ok: true });
   }),
 );
-// NOTIFICATIONS : les messages du suivi sont immédiats. Les notes médicales ne sont jamais envoyées.
+// NOTIFICATIONS : reminder worker, private patient messages, staff alerts, and optional email delivery.
 // Les e-mails sont confiés à un adaptateur configurable ; les rappels utilisent les dates UTC.
 let delivering = false;
 setInterval(async () => {
@@ -1018,6 +1340,7 @@ setInterval(async () => {
             appointmentId: a.id,
             patientId: a.patientId,
             message: `Rappel : votre rendez-vous est prévu le ${a.date} à ${a.scheduledStart} (${a.timezone || s.timezone}).`,
+            recipient: "PATIENT",
             createdAt: new Date().toISOString(),
             read: false,
             reminder: h,
@@ -1028,13 +1351,50 @@ setInterval(async () => {
           changed = true;
         }
       }
+      for (const minutesBefore of s.minuteReminders || [10, 5]) {
+        const minutesUntil = (Date.parse(at) - Date.now()) / 60000;
+        if (
+          minutesUntil > 0 &&
+          minutesUntil <= minutesBefore &&
+          !all("notifications").some(
+            (n) =>
+              n.appointmentId === a.id &&
+              n.reminder === minutesBefore &&
+              n.reminderUnit === "MINUTES" &&
+              n.scheduledFor === at,
+          )
+        ) {
+          notify(
+            a,
+            `Votre rendez-vous commence dans ${minutesBefore} minutes, à ${a.scheduledStart}.`,
+            "PATIENT",
+            {
+              reminder: minutesBefore,
+              reminderUnit: "MINUTES",
+              scheduledFor: at,
+            },
+          );
+          notifyStaff(
+            a,
+            `Le patient ${one("patients", a.patientId)?.firstName || "suivant"} arrive dans environ ${minutesBefore} minutes.`,
+            {
+              reminder: minutesBefore,
+              reminderUnit: "MINUTES",
+              scheduledFor: at,
+            },
+          );
+          changed = true;
+        }
+      }
     }
     if (changed) {
       save();
       emit();
     }
     if (process.env.EMAIL_WEBHOOK) {
-      for (const n of all("notifications").filter((n) => n.emailStatus === "pending")) {
+      for (const n of all("notifications").filter(
+        (n) => n.emailStatus === "pending" && n.recipient !== "STAFF",
+      )) {
         try {
           const response = await fetch(process.env.EMAIL_WEBHOOK, {
             method: "POST",

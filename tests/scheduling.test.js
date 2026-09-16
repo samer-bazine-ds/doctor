@@ -13,6 +13,8 @@ import {
   formatDinars,
   statusLabel,
 } from "../scheduling.js";
+
+// Shared opening hours used by the pure scheduling tests below.
 const settings = {
   days: Array.from({ length: 7 }, () => ({
     enabled: true,
@@ -24,6 +26,8 @@ const settings = {
   holidays: [],
 };
 const date = "2026-09-14";
+
+// Calendar exports must use UTC while retaining the clinic's local timezone metadata.
 test("L’export Google Agenda utilise l’heure d’Alger et ne transmet aucune donnée privée", () => {
   const doctor = {
     name: "Dr Ahmed Benali",

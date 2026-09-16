@@ -50,6 +50,11 @@ import {
   Star,
   ArrowLeft,
   Send,
+  MessageCircle,
+  Smartphone,
+  Instagram,
+  Linkedin,
+  Facebook,
 } from "lucide-react";
 import "./style.css";
 import {
@@ -85,6 +90,7 @@ const paths = {
   "Journal d’activité": "/dashboard/audit-log",
   Paramètres: "/dashboard/settings",
 };
+// Shared display helpers keep names, dates, status labels, and API errors consistent.
 const label = statusLabel;
 const initials = (p) => (p ? `${p.firstName?.[0] || ""}${p.lastName?.[0] || ""}` : "AB");
 const fullname = (p) => (p ? `${p.firstName} ${p.lastName}` : "Patient");
@@ -207,6 +213,7 @@ function App() {
     setMobile(false);
     window.scrollTo(0, 0);
   };
+  // Load the current session and public clinic data before rendering a page.
   useEffect(() => {
     const h = () => setPath(location.pathname);
     window.addEventListener("popstate", h);
@@ -276,6 +283,8 @@ function App() {
           <Auth {...shared} register={path === "/register"} />
         ) : path.startsWith("/appointment/") ? (
           <Tracking {...shared} id={path.split("/")[2]} />
+        ) : path === "/cancel" ? (
+          <CancelByCode {...shared} />
         ) : path.endsWith("/book") ? (
           <Booking {...shared} />
         ) : (
@@ -302,6 +311,15 @@ function App() {
           {...shared}
           date={modal.date}
           mode={modal.mode}
+          onClose={() => setModal(null)}
+        />
+      )}{" "}
+      {modal?.type === "early-arrival" && (
+        <EarlyArrivalModal
+          appointment={modal.appointment}
+          nextAppointment={modal.nextAppointment}
+          options={data?.settings?.earlyArrivalOptions || [5, 10, 15]}
+          mutate={mutate}
           onClose={() => setModal(null)}
         />
       )}{" "}
@@ -339,7 +357,10 @@ function App() {
   );
 }
 
-/** Tableau de bord professionnel : les données privées ne viennent que de l’API authentifiée. */
+/**
+ * Tableau de bord professionnel : les données privées ne viennent que de l’API authentifiée.
+ * The active route chooses the dashboard view while shared appointment data stays in one place.
+ */
 function Dashboard({
   path,
   user,
@@ -381,12 +402,22 @@ function Dashboard({
         { status },
         "Rendez-vous " + label(status).toLowerCase(),
       );
+      if (status === "COMPLETED") {
+        const nextAppointment = selected.find(
+          (item) =>
+            item.id !== a.id &&
+            item.estimatedStart > a.estimatedStart &&
+            !["COMPLETED", "CANCELLED", "NO_SHOW"].includes(item.status),
+        );
+        if (nextAppointment)
+          setModal({ type: "early-arrival", appointment: a, nextAppointment });
+      }
     } catch {}
   };
   const showQueue = (mode) =>
     user ? setModal({ type: "queue", date, mode }) : restricted();
   let visible = selected.filter((a) =>
-    `${fullname(a.patient)} ${a.patient?.phone} ${a.patient?.email} ${a.number}`
+    `${fullname(a.patient)} ${a.patient?.patientNumber} ${a.patient?.phone} ${a.patient?.email}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
@@ -650,74 +681,76 @@ function Dashboard({
                   Gérer les disponibilités <ArrowUpRight size={16} />
                 </button>
               </div>
-              <div className="stats-grid">
-                {[
-                  {
-                    name: "Rendez-vous",
-                    value: selected.length,
-                    icon: CalendarDays,
-                    color: "teal",
-                    note: "Prévus pour cette journée",
-                    detail: "Aujourd’hui",
-                  },
-                  {
-                    name: "Terminés",
-                    value: completed.length,
-                    icon: CheckCheck,
-                    color: "green",
-                    note: selected.length
-                      ? `${Math.round((completed.length / selected.length) * 100)}% des rendez-vous du jour`
-                      : "Une nouvelle journée commence",
-                    progress: selected.length
-                      ? (completed.length / selected.length) * 100
-                      : 0,
-                  },
-                  {
-                    name: "En attente",
-                    value: waiting.length,
-                    icon: Users,
-                    color: "amber",
-                    note: waiting.length
-                      ? "Patients prêts à être reçus"
-                      : "Aucun patient en attente",
-                    detail: "Dans la file",
-                  },
-                  {
-                    name: "Absences",
-                    value: selected.filter((a) => a.status === "NO_SHOW").length,
-                    icon: UserRound,
-                    color: "rose",
-                    note: "Historique conservé",
-                    detail: "Aujourd’hui",
-                  },
-                ].map((s) => (
-                  <section className="stat-card" key={s.name}>
-                    <div className="stat-top">
-                      <span>{s.name}</span>
-                      <span className={"stat-icon " + s.color}>
-                        <s.icon size={19} />
-                      </span>
-                    </div>
-                    <div className="stat-value">
-                      {String(s.value).padStart(2, "0")}
-                      {s.detail && <span>{s.detail}</span>}
-                    </div>
-                    {s.progress !== undefined ? (
-                      <div className="stat-progress">
-                        <div>
-                          <i style={{ width: s.progress + "%" }} />
-                        </div>
-                        <small>{s.note}</small>
+              {active === "Vue d’ensemble" && (
+                <div className="stats-grid">
+                  {[
+                    {
+                      name: "Rendez-vous",
+                      value: selected.length,
+                      icon: CalendarDays,
+                      color: "teal",
+                      note: "Prévus pour cette journée",
+                      detail: "Aujourd’hui",
+                    },
+                    {
+                      name: "Terminés",
+                      value: completed.length,
+                      icon: CheckCheck,
+                      color: "green",
+                      note: selected.length
+                        ? `${Math.round((completed.length / selected.length) * 100)}% des rendez-vous du jour`
+                        : "Une nouvelle journée commence",
+                      progress: selected.length
+                        ? (completed.length / selected.length) * 100
+                        : 0,
+                    },
+                    {
+                      name: "En attente",
+                      value: waiting.length,
+                      icon: Users,
+                      color: "amber",
+                      note: waiting.length
+                        ? "Patients prêts à être reçus"
+                        : "Aucun patient en attente",
+                      detail: "Dans la file",
+                    },
+                    {
+                      name: "Absences",
+                      value: selected.filter((a) => a.status === "NO_SHOW").length,
+                      icon: UserRound,
+                      color: "rose",
+                      note: "Historique conservé",
+                      detail: "Aujourd’hui",
+                    },
+                  ].map((s) => (
+                    <section className="stat-card" key={s.name}>
+                      <div className="stat-top">
+                        <span>{s.name}</span>
+                        <span className={"stat-icon " + s.color}>
+                          <s.icon size={19} />
+                        </span>
                       </div>
-                    ) : (
-                      <p>
-                        <span className={"small-dot " + s.color} />
-                        {s.note}
-                      </p>
-                    )}
-                  </section>
-                ))}
-              </div>
+                      <div className="stat-value">
+                        {String(s.value).padStart(2, "0")}
+                        {s.detail && <span>{s.detail}</span>}
+                      </div>
+                      {s.progress !== undefined ? (
+                        <div className="stat-progress">
+                          <div>
+                            <i style={{ width: s.progress + "%" }} />
+                          </div>
+                          <small>{s.note}</small>
+                        </div>
+                      ) : (
+                        <p>
+                          <span className={"small-dot " + s.color} />
+                          {s.note}
+                        </p>
+                      )}
+                    </section>
+                  ))}
+                </div>
+              )}
               <div className="content-columns">
                 <div className="queue-column">
                   <section className="consultation-card">
@@ -996,95 +1029,99 @@ function Dashboard({
                     </span>
                   </div>
                 </div>
-                <aside className="right-column">
-                  <section className="next-card">
-                    <div className="small-card-heading">
-                      <h3>Prochain patient</h3>
-                      <span className="next-number">{next ? "01" : "—"}</span>
-                    </div>
-                    {next ? (
-                      <>
-                        <div className="next-patient">
-                          <Avatar patient={next.patient} size="large" index={2} />
-                          <h3>{fullname(next.patient)}</h3>
-                          <p>{next.service?.name}</p>
-                          <Badge status={next.status} />
-                        </div>
-                        <div className="next-times">
-                          <div>
-                            <span>Prévu</span>
-                            <strong>{next.scheduledStart}</strong>
-                          </div>
-                          <div>
-                            <span>Estimé</span>
-                            <strong>
-                              {next.estimatedStart}
-                              <span className="green-dot" />
-                            </strong>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="next-empty">
-                        <div>
-                          <Users size={28} />
-                        </div>
-                        <h4>Un moment pour souffler</h4>
-                        <p>Votre prochain patient apparaîtra ici.</p>
+                {active === "Vue d’ensemble" && (
+                  <aside className="right-column">
+                    <section className="next-card">
+                      <div className="small-card-heading">
+                        <h3>Prochain patient</h3>
+                        <span className="next-number">{next ? "01" : "—"}</span>
                       </div>
-                    )}
-                    <button
-                      className="button primary full"
-                      onClick={() => showQueue("next")}
-                    >
-                      <ArrowRight size={17} /> Avancer le prochain patient
-                    </button>
-                    <p className="next-hint">Avancer l’horaire du prochain rendez-vous</p>
-                  </section>
-                  <section className="quick-card">
-                    <h3>Gardez le rythme</h3>
-                    <button onClick={() => showQueue("all")}>
-                      <span className="quick-icon">
-                        <ArrowDownUp size={18} />
-                      </span>
-                      <span>
-                        <strong>Décaler toute la file</strong>
-                        <small>Ajuster les rendez-vous à venir</small>
-                      </span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button onClick={() => showQueue("delay")}>
-                      <span className="quick-icon amber">
-                        <Clock size={18} />
-                      </span>
-                      <span>
-                        <strong>Ajouter un retard</strong>
-                        <small>Prévenir vos patients du décalage</small>
-                      </span>
-                      <ChevronRight size={16} />
-                    </button>
-                  </section>
-                  <MiniCalendar
-                    date={date}
-                    setDate={setDate}
-                    appointments={appointments}
-                  />
-                  <div className="break-card">
-                    <span>☕</span>
-                    <div>
-                      <strong>Une pause bien méritée</strong>
-                      <p>
-                        Pause déjeuner ·{" "}
-                        {pub.doctor.days[new Date(date + "T12:00:00").getDay()]
-                          ?.breakStart || "Sans pause"}{" "}
-                        –{" "}
-                        {pub.doctor.days[new Date(date + "T12:00:00").getDay()]
-                          ?.breakEnd || ""}
+                      {next ? (
+                        <>
+                          <div className="next-patient">
+                            <Avatar patient={next.patient} size="large" index={2} />
+                            <h3>{fullname(next.patient)}</h3>
+                            <p>{next.service?.name}</p>
+                            <Badge status={next.status} />
+                          </div>
+                          <div className="next-times">
+                            <div>
+                              <span>Prévu</span>
+                              <strong>{next.scheduledStart}</strong>
+                            </div>
+                            <div>
+                              <span>Estimé</span>
+                              <strong>
+                                {next.estimatedStart}
+                                <span className="green-dot" />
+                              </strong>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="next-empty">
+                          <div>
+                            <Users size={28} />
+                          </div>
+                          <h4>Un moment pour souffler</h4>
+                          <p>Votre prochain patient apparaîtra ici.</p>
+                        </div>
+                      )}
+                      <button
+                        className="button primary full"
+                        onClick={() => showQueue("next")}
+                      >
+                        <ArrowRight size={17} /> Avancer le prochain patient
+                      </button>
+                      <p className="next-hint">
+                        Avancer l’horaire du prochain rendez-vous
                       </p>
+                    </section>
+                    <section className="quick-card">
+                      <h3>Gardez le rythme</h3>
+                      <button onClick={() => showQueue("all")}>
+                        <span className="quick-icon">
+                          <ArrowDownUp size={18} />
+                        </span>
+                        <span>
+                          <strong>Décaler toute la file</strong>
+                          <small>Ajuster les rendez-vous à venir</small>
+                        </span>
+                        <ChevronRight size={16} />
+                      </button>
+                      <button onClick={() => showQueue("delay")}>
+                        <span className="quick-icon amber">
+                          <Clock size={18} />
+                        </span>
+                        <span>
+                          <strong>Ajouter un retard</strong>
+                          <small>Prévenir vos patients du décalage</small>
+                        </span>
+                        <ChevronRight size={16} />
+                      </button>
+                    </section>
+                    <MiniCalendar
+                      date={date}
+                      setDate={setDate}
+                      appointments={appointments}
+                    />
+                    <div className="break-card">
+                      <span>☕</span>
+                      <div>
+                        <strong>Une pause bien méritée</strong>
+                        <p>
+                          Pause déjeuner ·{" "}
+                          {pub.doctor.days[new Date(date + "T12:00:00").getDay()]
+                            ?.breakStart || "Sans pause"}{" "}
+                          –{" "}
+                          {pub.doctor.days[new Date(date + "T12:00:00").getDay()]
+                            ?.breakEnd || ""}
+                        </p>
+                      </div>
+                      <ShieldCheck size={16} />
                     </div>
-                    <ShieldCheck size={16} />
-                  </div>
-                </aside>
+                  </aside>
+                )}
               </div>
             </>
           ) : active === "Calendrier" ? (
@@ -1400,7 +1437,7 @@ function PatientForm({ data, pub, appointment: a, date, onClose, mutate }) {
       title={a ? "Détails du rendez-vous" : "Ajouter un patient"}
       subtitle={
         a
-          ? `${a.number} · ${label(a.status)}`
+          ? `Patient n° ${a.patient?.patientNumber} · ${label(a.status)}`
           : "Préparez la prochaine visite de votre patient."
       }
       onClose={onClose}
@@ -1689,7 +1726,55 @@ function QueueForm({ date, mode, onClose, mutate, pub }) {
   );
 }
 
-/** Vues jour, semaine et mois ; glisser-déposer avec confirmation et validation serveur. */
+function EarlyArrivalModal({ appointment, nextAppointment, options, mutate, onClose }) {
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  return (
+    <Modal title="Prévenir le patient suivant ?" onClose={onClose}>
+      <p className="modal-copy">
+        {fullname(nextAppointment.patient)} peut arriver plus tôt si cela lui convient.
+        Son rendez-vous reste à {nextAppointment.scheduledStart} s’il préfère.
+      </p>
+      {error && <div className="form-error">{error}</div>}
+      <div className="form-actions">
+        <button className="button" onClick={onClose}>
+          Garder l’horaire
+        </button>
+        {options.map((minutes) => (
+          <button
+            className="button primary"
+            key={minutes}
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              setError("");
+              try {
+                await mutate(
+                  "/appointments/" + appointment.id + "/early-arrival",
+                  "POST",
+                  { minutes },
+                  "Patient prévenu de l’arrivée anticipée",
+                );
+                onClose();
+              } catch (e) {
+                setError(e.message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Prévenir {minutes} min avant
+          </button>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
+/**
+ * Vues jour, semaine et mois ; glisser-déposer avec confirmation et validation serveur.
+ * The calendar only proposes changes; the server validates conflicts before saving them.
+ */
 function CalendarPage({ appointments, date, setDate, setModal, mutate }) {
   const [view, setView] = useState("Semaine"),
     [move, setMove] = useState(null);
@@ -1840,7 +1925,7 @@ function AppointmentsPage({ appointments, setModal, change }) {
   const [q, setQ] = useState("");
   const list = appointments
     .filter((a) =>
-      `${fullname(a.patient)} ${a.number} ${a.patient?.phone} ${a.patient?.email}`
+      `${fullname(a.patient)} ${a.patient?.patientNumber} ${a.patient?.phone} ${a.patient?.email}`
         .toLowerCase()
         .includes(q.toLowerCase()),
     )
@@ -1868,7 +1953,7 @@ function AppointmentsPage({ appointments, setModal, change }) {
               <tr>
                 <th>PATIENT</th>
                 <th>DATE ET HEURE</th>
-                <th>RÉFÉRENCE</th>
+                <th>N° PATIENT</th>
                 <th>STATUT</th>
                 <th>ACTIONS</th>
               </tr>
@@ -1888,7 +1973,7 @@ function AppointmentsPage({ appointments, setModal, change }) {
                       {a.scheduledStart} · Estimé à {a.estimatedStart}
                     </small>
                   </td>
-                  <td>{a.number}</td>
+                  <td>{a.patient?.patientNumber}</td>
                   <td>
                     <Badge status={a.status} />
                   </td>
@@ -1913,7 +1998,7 @@ function PatientsPage({ data, setModal }) {
   const patients = (data?.patients || []).filter((p) =>
     `${fullname(p)} ${p.phone} ${p.email} ${(data?.appointments || [])
       .filter((a) => a.patientId === p.id)
-      .map((a) => a.number)
+      .map((a) => a.patient?.patientNumber)
       .join(" ")}`
       .toLowerCase()
       .includes(q.toLowerCase()),
@@ -1980,7 +2065,7 @@ function PatientsPage({ data, setModal }) {
                     {a.date} · {a.scheduledStart}
                   </strong>
                   <small>
-                    {a.service?.name} · {a.number}
+                    {a.service?.name} · Patient n° {a.patient?.patientNumber}
                   </small>
                 </div>
                 <Badge status={a.status} />
@@ -1997,7 +2082,10 @@ function SettingsPage({ data, pub, mutate, user, go, setUser, toast, type }) {
     [saved, setSaved] = useState(false),
     [err, setErr] = useState(""),
     [staffModal, setStaffModal] = useState(false),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [clearPassword, setClearPassword] = useState(""),
+    [clearError, setClearError] = useState(""),
+    [clearBusy, setClearBusy] = useState(false);
   useEffect(() => setS(data?.settings || pub.doctor), [data?.settings, pub.doctor]);
   const update = (k, v) => {
     setS({ ...s, [k]: v });
@@ -2018,6 +2106,20 @@ function SettingsPage({ data, pub, mutate, user, go, setUser, toast, type }) {
       setErr(e.message);
     } finally {
       setBusy(false);
+    }
+  };
+  const clearData = async () => {
+    if (!window.confirm("Supprimer définitivement les patients, rendez-vous, notifications et journal ?")) return;
+    setClearBusy(true);
+    setClearError("");
+    try {
+      await api("/data/clear", "POST", { password: clearPassword });
+      setUser(null);
+      go("/login");
+    } catch (e) {
+      setClearError(e.message);
+    } finally {
+      setClearBusy(false);
     }
   };
   return (
@@ -2079,6 +2181,42 @@ function SettingsPage({ data, pub, mutate, user, go, setUser, toast, type }) {
                 value={s.address}
                 onChange={(e) => update("address", e.target.value)}
                 required
+              />
+            </label>
+            <label>
+              Instagram
+              <input
+                type="url"
+                placeholder="https://instagram.com/..."
+                value={s.socials?.instagram || ""}
+                onChange={(e) => update("socials", { ...s.socials, instagram: e.target.value })}
+              />
+            </label>
+            <label>
+              Facebook
+              <input
+                type="url"
+                placeholder="https://facebook.com/..."
+                value={s.socials?.facebook || ""}
+                onChange={(e) => update("socials", { ...s.socials, facebook: e.target.value })}
+              />
+            </label>
+            <label>
+              LinkedIn
+              <input
+                type="url"
+                placeholder="https://linkedin.com/in/..."
+                value={s.socials?.linkedin || ""}
+                onChange={(e) => update("socials", { ...s.socials, linkedin: e.target.value })}
+              />
+            </label>
+            <label>
+              WhatsApp
+              <input
+                type="url"
+                placeholder="https://wa.me/213..."
+                value={s.socials?.whatsapp || ""}
+                onChange={(e) => update("socials", { ...s.socials, whatsapp: e.target.value })}
               />
             </label>
           </div>
@@ -2255,6 +2393,42 @@ function SettingsPage({ data, pub, mutate, user, go, setUser, toast, type }) {
               {h} heures avant le rendez-vous
             </label>
           ))}
+          <p className="muted">Alertes juste avant le rendez-vous</p>
+          {[5, 10, 15].map((minutes) => (
+            <label className="checkbox-label" key={"minute" + minutes}>
+              <input
+                type="checkbox"
+                checked={(s.minuteReminders || [10, 5]).includes(minutes)}
+                onChange={(e) =>
+                  update(
+                    "minuteReminders",
+                    e.target.checked
+                      ? [...(s.minuteReminders || []), minutes]
+                      : (s.minuteReminders || []).filter((n) => n !== minutes),
+                  )
+                }
+              />
+              {minutes} minutes avant, pour le patient et le cabinet
+            </label>
+          ))}
+          <p className="muted">Arrivée anticipée proposée au patient suivant</p>
+          {[5, 10, 15].map((minutes) => (
+            <label className="checkbox-label" key={"early" + minutes}>
+              <input
+                type="checkbox"
+                checked={(s.earlyArrivalOptions || [5, 10, 15]).includes(minutes)}
+                onChange={(e) =>
+                  update(
+                    "earlyArrivalOptions",
+                    e.target.checked
+                      ? [...(s.earlyArrivalOptions || []), minutes]
+                      : (s.earlyArrivalOptions || []).filter((n) => n !== minutes),
+                  )
+                }
+              />
+              Proposer {minutes} minutes d’avance
+            </label>
+          ))}
         </section>
         {user && (
           <section className="panel settings-panel">
@@ -2284,6 +2458,32 @@ function SettingsPage({ data, pub, mutate, user, go, setUser, toast, type }) {
               <LogOut size={16} />
               Se déconnecter
             </button>
+            <div className="danger-zone">
+              <h3>Réinitialiser les données</h3>
+              <p className="muted">
+                Supprime les patients, rendez-vous, notifications et journal. Les services,
+                horaires et paramètres du cabinet sont conservés.
+              </p>
+              <label>
+                Mot de passe du compte
+                <input
+                  type="password"
+                  value={clearPassword}
+                  onChange={(e) => setClearPassword(e.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Votre mot de passe"
+                />
+              </label>
+              {clearError && <div className="form-error">{clearError}</div>}
+              <button
+                className="button danger full"
+                type="button"
+                disabled={clearBusy || !clearPassword}
+                onClick={clearData}
+              >
+                {clearBusy ? "Suppression…" : "Supprimer les données du cabinet"}
+              </button>
+            </div>
           </section>
         )}
       </div>
@@ -2689,11 +2889,69 @@ function PublicHeader({ go }) {
         <a href="/#contact" onClick={() => setMenuOpen(false)}>
           Contact
         </a>
+        <a href="/cancel" onClick={() => setMenuOpen(false)}>
+          Annuler un rendez-vous
+        </a>
         <button className="button staff-link" onClick={() => go("/login")}>
           Espace professionnel <ArrowUpRight size={15} />
         </button>
       </nav>
     </header>
+  );
+}
+
+function CancelByCode({ go }) {
+  const [code, setCode] = useState(""),
+    [message, setMessage] = useState(""),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false);
+  async function submit(event) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+    setError("");
+    try {
+      const result = await api("/cancel-by-code", "POST", {
+        cancellationCode: code,
+      });
+      setMessage(result.message);
+      setCode("");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="public-page">
+      <PublicHeader go={go} />
+      <section className="auth-card cancel-code-card">
+        <span className="success-icon">
+          <CalendarDays size={28} />
+        </span>
+        <h1>Annuler un rendez-vous</h1>
+        <p className="muted">
+          Entrez le code indiqué sur votre reçu. L’annulation est possible uniquement au
+          moins 24 heures avant le rendez-vous.
+        </p>
+        <form onSubmit={submit}>
+          <label>
+            Code d’annulation
+            <input
+              value={code}
+              onChange={(event) => setCode(event.target.value.toUpperCase())}
+              placeholder="ANN-XXXXXXXX"
+              required
+            />
+          </label>
+          {error && <div className="form-error">{error}</div>}
+          {message && <div className="info-box">{message}</div>}
+          <button className="button primary full" disabled={busy}>
+            {busy ? "Annulation…" : "Annuler le rendez-vous"}
+          </button>
+        </form>
+      </section>
+    </div>
   );
 }
 
@@ -3049,6 +3307,37 @@ function Doctor({ pub, go }) {
               </div>
               <ArrowUpRight size={18} />
             </a>
+            {[
+              ["instagram", "Instagram", Instagram],
+              ["facebook", "Facebook", Facebook],
+              ["linkedin", "LinkedIn", Linkedin],
+              ["whatsapp", "WhatsApp", MessageCircle],
+            ].filter(([network]) => doctor.socials?.[network]).length > 0 && (
+              <div className="social-links">
+                <small>RÉSEAUX SOCIAUX</small>
+                <div>
+                  {[
+                    ["instagram", "Instagram", Instagram],
+                    ["facebook", "Facebook", Facebook],
+                    ["linkedin", "LinkedIn", Linkedin],
+                    ["whatsapp", "WhatsApp", MessageCircle],
+                  ]
+                    .filter(([network]) => doctor.socials?.[network])
+                    .map(([network, name, Icon]) => (
+                      <a
+                        key={network}
+                        href={doctor.socials[network]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={name}
+                        title={name}
+                      >
+                        <Icon size={18} />
+                      </a>
+                    ))}
+                </div>
+              </div>
+            )}
             <a
               className="button map-button"
               href={mapLink}
@@ -3616,6 +3905,35 @@ function Tracking({ id, go }) {
     el.click();
     URL.revokeObjectURL(url);
   }
+  function phoneLink(kind) {
+    const phone = String(a.patient?.phone || "").replace(/[^\d+]/g, "");
+    const trackingUrl = `${location.origin}/appointment/${a.id}?token=${encodeURIComponent(token)}`;
+    const message = `Bonjour ${a.patient?.firstName || ""}, voici votre lien de rendez-vous : ${trackingUrl}\nAjouter à Google Agenda : ${googleCalendarUrl(a, a.doctor)}`;
+    return kind === "whatsapp"
+      ? `https://wa.me/${phone.replace(/^\+/, "")}?text=${encodeURIComponent(message)}`
+      : `sms:${phone}?body=${encodeURIComponent(message)}`;
+  }
+  function downloadReceipt() {
+    const receipt = [
+      "PULSE - RECU DE RENDEZ-VOUS",
+      "================================",
+      `Patient : ${fullname(a.patient)}`,
+      `Numero patient : ${a.patient?.patientNumber || "-"}`,
+      `Date : ${dateText(a.date)}`,
+      `Heure : ${a.scheduledStart}`,
+      `Medecin : ${a.doctor.name}`,
+      `Service : ${a.service.name}`,
+      `Code d'annulation : ${a.cancellationCode || "Voir le lien prive"}`,
+      "",
+      "Annulation possible au moins 24 heures avant le rendez-vous.",
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([receipt], { type: "text/plain" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "recu-rendez-vous-pulse.txt";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
   return (
     <div className="public-page">
       <PublicHeader go={go} />
@@ -3640,7 +3958,16 @@ function Tracking({ id, go }) {
                 ? "Vous pouvez réserver une nouvelle consultation quand vous le souhaitez."
                 : "Votre consultation est réservée. Nous serons heureux de vous accueillir."}
             </p>
-            <span className="reference">{a.number}</span>
+            <span className="reference">
+              {a.patient?.patientNumber || "Numéro indisponible"}
+            </span>
+            <div className="info-box">
+              <ShieldCheck size={19} />
+              <p>
+                Code d’annulation : <strong>{a.cancellationCode || "Disponible dans votre reçu"}</strong>
+                <br />Conservez ce code. L’annulation est possible au moins 24 heures avant le rendez-vous.
+              </p>
+            </div>
             <div className="tracking-times">
               <div>
                 <span>Horaire prévu</span>
@@ -3683,9 +4010,42 @@ function Tracking({ id, go }) {
                   <ArrowUpRight size={15} />
                 </a>
               )}
+              {!["CANCELLED", "NO_SHOW"].includes(a.status) && (
+                <>
+                  <a className="button" href={phoneLink("sms")}>
+                    <Smartphone size={16} />
+                    Envoyer par SMS
+                  </a>
+                  <a
+                    className="button"
+                    href={phoneLink("whatsapp")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle size={16} />
+                    Envoyer par WhatsApp
+                  </a>
+                </>
+              )}
+              {a.googleCalendar?.configured && !a.googleCalendar.connected && (
+                <a
+                  className="button"
+                  href={`/auth/google/start/${a.id}?token=${encodeURIComponent(token)}`}
+                >
+                  <CalendarDays size={16} />
+                  Synchroniser avec Google Agenda
+                </a>
+              )}
+              {a.googleCalendar?.connected && (
+                <span className="calendar-export-note">Google Agenda synchronisé</span>
+              )}
               <button className="button" onClick={download}>
                 <Download size={16} />
                 Télécharger le fichier .ics
+              </button>
+              <button className="button" onClick={downloadReceipt}>
+                <Download size={16} />
+                Télécharger le reçu
               </button>
               {!["CANCELLED", "COMPLETED", "NO_SHOW", "IN_CONSULTATION"].includes(
                 a.status,
@@ -3696,9 +4056,9 @@ function Tracking({ id, go }) {
               )}
             </div>
             <p className="calendar-export-note">
-              L’horaire réservé est ajouté à votre agenda. Les changements restent
-              visibles sur cette page et ne sont pas synchronisés automatiquement avec
-              Google.
+              {a.googleCalendar?.connected
+                ? "Votre agenda Google est synchronisé automatiquement avec les changements du cabinet."
+                : "L’ajout simple crée une copie dans votre agenda. Pour synchroniser automatiquement les changements, utilisez « Synchroniser avec Google Agenda »."}
             </p>
             <div className="info-box">
               <ShieldCheck size={19} />

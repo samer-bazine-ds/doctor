@@ -1,4 +1,4 @@
-// Vérifications automatiques : utilisez npm test pour vérifier les règles sans ouvrir le navigateur.
+// API-level tests: start an isolated server and verify security, persistence, and workflows.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";

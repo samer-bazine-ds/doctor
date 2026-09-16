@@ -1,3 +1,4 @@
+/* Typography, colors, and spacing tokens shared by the public site and cabinet dashboard. */
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap");
 :root {
   font-family: "DM Sans", sans-serif;
@@ -162,6 +163,18 @@ button:hover:not(:disabled) {
   border-color: #b74747;
   color: white;
 }
+.danger-zone {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #f0dddd;
+}
+.danger-zone h3 {
+  color: #a85050;
+  font-size: 13px;
+}
+.danger-zone .muted {
+  margin: 8px 0 14px;
+}
 .full {
   width: 100%;
 }
@@ -196,6 +209,7 @@ button:hover:not(:disabled) {
   font-size: 12px;
   line-height: 1.7;
 }
+/* Fixed navigation plus a flexible content area for the professional dashboard. */
 .app-shell {
   display: flex;
   min-height: 100vh;
@@ -204,6 +218,7 @@ button:hover:not(:disabled) {
   width: 236px;
   position: fixed;
   inset: 0 auto 0 0;
+  overflow-y: auto;
   background: #fff;
   border-right: 1px solid var(--line);
   padding: 29px 17px 0;
@@ -422,6 +437,7 @@ button:hover:not(:disabled) {
   margin-left: auto;
   color: #8c9692;
 }
+/* The main shell reserves space for the fixed sidebar on desktop. */
 .main-shell {
   width: calc(100% - 236px);
   margin-left: 236px;
@@ -1001,6 +1017,7 @@ button:hover:not(:disabled) {
 }
 .queue-table {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
   text-align: left;
   white-space: nowrap;
@@ -1171,6 +1188,10 @@ button:hover:not(:disabled) {
 }
 .dropdown-menu button:hover {
   background: #f1f7f2;
+}
+.queue-table tr:last-child .dropdown-menu {
+  top: auto;
+  bottom: 26px;
 }
 .danger-text {
   color: #b0635a !important;
@@ -3026,6 +3047,7 @@ button:hover:not(:disabled) {
   }
 }
 @media (max-width: 800px) {
+  /* On smaller screens the sidebar becomes an off-canvas menu and content uses one column. */
   .sidebar {
     width: 210px;
     transform: translateX(-100%);
@@ -3062,7 +3084,7 @@ button:hover:not(:disabled) {
     display: flex;
   }
   .content-columns {
-    grid-template-columns: minmax(0, 1fr) 240px;
+    grid-template-columns: 1fr;
     gap: 17px;
   }
   .doctor-identity h3 {
@@ -3354,6 +3376,9 @@ button:hover:not(:disabled) {
   .queue-table td,
   .queue-table th {
     padding: 14px 9px;
+  }
+  .table-scroll {
+    overscroll-behavior-x: contain;
   }
   .queue-table td:first-child,
   .queue-table th:first-child {
@@ -4510,6 +4535,35 @@ html {
   color: #aabe92;
   margin-left: auto;
   width: 15px;
+}
+.social-links {
+  max-width: 420px;
+  padding: 20px 0 4px;
+}
+.social-links > small {
+  color: #abba99;
+  font-size: 8px;
+  letter-spacing: 1.3px;
+}
+.social-links > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 11px;
+}
+.social-links a {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: #789666;
+  border: 1px solid #dfe9d1;
+  border-radius: 9px;
+  background: #f7faef;
+}
+.social-links a:hover {
+  color: var(--teal);
+  background: #edf6ee;
 }
 .map-button {
   color: #86a070;

@@ -41,6 +41,8 @@ export const inactive = ["COMPLETED", "CANCELLED", "NO_SHOW"];
 export const minutes = (t) => Number(t.split(":")[0]) * 60 + Number(t.split(":")[1]);
 export const clock = (n) =>
   `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
+
+// Validate the selected date against holidays and the weekly opening rules.
 export function dayRule(date, settings) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw Error("Choisissez une date valide.");
   const parsed = new Date(`${date}T12:00:00Z`);
@@ -53,6 +55,8 @@ export function dayRule(date, settings) {
   if (!rule?.enabled) throw Error("Le cabinet est fermé ce jour-là.");
   return rule;
 }
+
+// Reject invalid times, breaks, closed days, and overlaps with existing appointments.
 export function validateSlot(date, time, duration, appointments, settings, exclude) {
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))
     throw Error("Choisissez une heure valide.");
@@ -82,6 +86,8 @@ export function validateSlot(date, time, duration, appointments, settings, exclu
     );
   return true;
 }
+
+// Generate bookable times in 15-minute increments for the public booking calendar.
 export function getAvailableSlots(date, duration, appointments, settings) {
   let rule;
   try {
@@ -98,6 +104,8 @@ export function getAvailableSlots(date, duration, appointments, settings) {
   }
   return slots;
 }
+
+// Move estimated queue times while preserving the original booked appointment times.
 export function shiftQueue(appointments, date, start, settings, onlyNext = false) {
   const rule = dayRule(date, settings);
   const queue = appointments
@@ -142,6 +150,8 @@ export function shiftQueue(appointments, date, start, settings, onlyNext = false
   }
   return changes;
 }
+
+// Convert the current instant into the clinic's local calendar date or clock time.
 export function localDate(timezone = "Africa/Algiers", now = new Date()) {
   const p = Object.fromEntries(
     new Intl.DateTimeFormat("en", {
