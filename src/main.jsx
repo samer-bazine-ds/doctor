@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { createRoot } from "react-dom/client";
 import { io } from "socket.io-client";
+import { createClient } from "@supabase/supabase-js";
 import {
   Activity,
   LayoutDashboard,
@@ -120,18 +121,32 @@ async function api(path, method = "GET", body) {
   if (!r.ok) throw Error(data.error || "Une erreur est survenue. Veuillez réessayer.");
   return data;
 }
-// Une mise à jour Socket.IO recharge uniquement les données autorisées pour cette page.
+const browserSupabase =
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
+    ? createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY)
+    : null;
+// Realtime signals contain no patient data; the page reloads authorized API data after an update.
 class LiveConnection {
   constructor(url) {
     const token = new URL(url, location.origin).searchParams.get("token");
-    this.socket = io({ auth: { token }, transports: ["websocket", "polling"] });
+    if (browserSupabase) {
+      this.channel = browserSupabase.channel("clinic-updates");
+      this.socket = null;
+    } else {
+      this.socket = io({ auth: { token }, transports: ["websocket", "polling"] });
+    }
   }
   addEventListener(event, fn) {
+    if (this.channel) {
+      this.channel.on("broadcast", { event }, fn).subscribe();
+      return;
+    }
     this.socket.on(event, fn);
     this.socket.on("connect", fn);
   }
   close() {
-    this.socket.disconnect();
+    if (this.channel) browserSupabase.removeChannel(this.channel);
+    else this.socket.disconnect();
   }
 }
 function IconButton({ icon: Icon, label: aria, ...props }) {

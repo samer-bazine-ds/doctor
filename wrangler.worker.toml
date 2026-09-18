@@ -1,0 +1,6 @@
+name = "pulse-clinic-api"
+main = "worker/index.js"
+compatibility_date = "2026-09-19"
+
+[vars]
+# Set SUPABASE_URL with `wrangler secret put SUPABASE_URL` for production.

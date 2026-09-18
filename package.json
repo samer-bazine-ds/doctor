@@ -8,6 +8,8 @@
     "start": "node --env-file=.env server.js",
     "build": "vite build",
     "deploy:pages": "npm run build && wrangler pages deploy dist --project-name pulse-clinic",
+    "dev:worker": "wrangler dev --config wrangler.worker.toml",
+    "deploy:worker": "wrangler deploy --config wrangler.worker.toml",
     "test": "node --test tests/scheduling.test.js tests/integration.test.js",
     "test:browser": "node tests/browser.mjs",
     "format": "prettier --write server.js scheduling.js src tests .devcontainer index.html package.json README.md",
