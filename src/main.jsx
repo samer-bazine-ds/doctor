@@ -111,8 +111,9 @@ const addDay = (d, n) => {
   return iso(a);
 };
 // Point commun à tous les appels API : les erreurs du serveur sont affichées en français.
+const apiBase = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 async function api(path, method = "GET", body) {
-  const r = await fetch("/api" + path, {
+  const r = await fetch(apiBase + "/api" + path, {
     method,
     headers: { "Content-Type": "application/json" },
     ...(body ? { body: JSON.stringify(body) } : {}),
