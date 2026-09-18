@@ -7,6 +7,7 @@
     "dev": "node --env-file=.env server.js",
     "start": "node --env-file=.env server.js",
     "build": "vite build",
+    "deploy:pages": "npm run build && wrangler pages deploy dist --project-name pulse-clinic",
     "test": "node --test tests/scheduling.test.js tests/integration.test.js",
     "test:browser": "node tests/browser.mjs",
     "format": "prettier --write server.js scheduling.js src tests .devcontainer index.html package.json README.md",
@@ -26,7 +27,8 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "node": "^22.23.2",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.6",
+    "wrangler": "^4.135.0"
   },
   "overrides": {
     "qs": "^6.16.0"
