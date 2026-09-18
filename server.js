@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { createServer as createHttpServer } from "node:http";
 import { Server as SocketServer } from "socket.io";
+import { createSupabaseStore } from "./server/supabase-store.js";
 import {
   getAvailableSlots,
   validateSlot,
@@ -182,8 +183,29 @@ const put = (kind, obj) => {
     obj.id,
     JSON.stringify(obj),
   ]);
+  if (supabaseStore)
+    supabaseStore.putRecord(kind, obj).catch((error) =>
+      console.error(`Supabase write failed for ${kind}/${obj.id}:`, error.message),
+    );
 };
 const one = (kind, id) => all(kind).find((a) => a.id === id);
+const supabaseStore =
+  process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createSupabaseStore()
+    : null;
+const syncedKinds = ["settings", "services", "patients", "appointments", "notifications", "audit"];
+if (supabaseStore) {
+  for (const kind of syncedKinds) {
+    const remoteRecords = await supabaseStore.records(kind);
+    for (const value of remoteRecords) {
+      db.run("INSERT OR REPLACE INTO records VALUES (?,?,?)", [
+        kind,
+        value.id,
+        JSON.stringify(value),
+      ]);
+    }
+  }
+}
 const id = () => crypto.randomUUID();
 const hash = (password, salt) => crypto.scryptSync(password, salt, 64).toString("hex");
 // Du samedi au vendredi : les sept jours sont ouverts de 08:00 à 17:00.

@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js",
+    "dev": "node --env-file=.env server.js",
+    "start": "node --env-file=.env server.js",
     "build": "vite build",
     "test": "node --test tests/scheduling.test.js tests/integration.test.js",
     "test:browser": "node tests/browser.mjs",
@@ -13,6 +13,7 @@
     "format:check": "prettier --check server.js scheduling.js src tests .devcontainer index.html package.json README.md"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "express": "^4.21.2",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
