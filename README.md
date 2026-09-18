@@ -175,7 +175,12 @@ redémarrer le serveur avec la nouvelle version.
   personnelles dans les événements diffusés.
 - Les rappels en ligne sont disponibles. Pour les e-mails, configurez `EMAIL_WEBHOOK` et
   éventuellement `EMAIL_WEBHOOK_TOKEN`. L’adaptateur reçoit `{id, to, subject, text}` et
-  doit éviter les doubles envois en utilisant `id`.
+  doit éviter les doubles envois en utilisant `id`. Pour prévenir automatiquement un
+  patient par SMS quand son rendez-vous avance, configurez aussi `SMS_WEBHOOK` et,
+  éventuellement, `SMS_WEBHOOK_TOKEN`. Cet adaptateur reçoit
+  `{id, to, message, appointmentId, kind}`. Il doit utiliser `id` pour éviter les doubles
+  envois. Pulse ne contient pas de clé Twilio ou WhatsApp : le webhook peut être un petit
+  service qui appelle le fournisseur choisi par le cabinet.
 - Pour un hébergement durable : Node 22, `npm run build`, `NODE_ENV=production`,
   `npm start`, HTTPS, stockage persistant et sauvegardes de la base.
 

@@ -4761,6 +4761,1248 @@ html {
   display: none;
 }
 
+/* Shared product skin for booking, account, tracking, and the professional workspace. */
+:root {
+  --teal: #2858e8;
+  --ink: #111a2e;
+  --muted: #71809d;
+  --line: #dbe4f7;
+  --pale: #e8efff;
+}
+
+body {
+  background: #e9efff;
+}
+
+.public-page {
+  background: #e9efff;
+  color: #111a2e;
+}
+
+.public-page:not(.landing-page) .public-header {
+  background: #e9effff2;
+  border-bottom-color: #dbe4fb;
+}
+
+.public-page:not(.landing-page) .public-header .brand {
+  color: #111a2e;
+}
+
+.public-page:not(.landing-page) .public-header .brand-mark {
+  border-radius: 50%;
+  background: #2858e8;
+}
+
+.public-page:not(.landing-page) .public-header .brand-dot,
+.public-page:not(.landing-page) .public-header nav a:hover {
+  color: #2858e8;
+}
+
+.public-page:not(.landing-page) .public-header nav {
+  color: #68738c;
+}
+
+.public-page:not(.landing-page) .public-header .staff-link {
+  color: #fff;
+  background: #2858e8;
+  border-color: #2858e8;
+  border-radius: 999px;
+  box-shadow: 0 8px 18px #2858e82b;
+}
+
+.auth-layout,
+.booking-layout {
+  position: relative;
+}
+
+.auth-layout {
+  max-width: 1160px;
+  margin: 64px auto;
+  gap: 80px;
+}
+
+.auth-message h1,
+.booking-intro h1 {
+  color: #111a2e;
+  font-weight: 750;
+}
+
+.auth-message h1 em,
+.booking-intro h1 em {
+  color: #2858e8;
+}
+
+.auth-message > p,
+.booking-intro > p,
+.booking-doctor p {
+  color: #71809d;
+}
+
+.auth-art {
+  color: #2858e8;
+}
+
+.auth-art .orbit {
+  border-color: #cbd8fa;
+}
+
+.art-heart,
+.art-calendar {
+  background: #dfe8ff;
+  border-color: #cbd8fa;
+  color: #2858e8;
+}
+
+.auth-card,
+.booking-card,
+.tracking-card {
+  border: 1px solid #d7e1f6;
+  border-radius: 24px;
+  box-shadow: 0 18px 50px #566fa51c;
+}
+
+.auth-card {
+  padding: 40px;
+}
+
+.auth-icon,
+.success-icon,
+.review-icon {
+  background: #dfe8ff;
+  color: #2858e8;
+}
+
+.auth-card h2,
+.booking-card h2,
+.tracking-card h1 {
+  color: #172544;
+}
+
+.auth-card > p,
+.auth-card label,
+.booking-card label {
+  color: #6f7d9b;
+}
+
+.auth-card input,
+.booking-card input,
+.booking-card select,
+.booking-card textarea {
+  border-color: #d5e0f5;
+  background: #f8faff;
+  border-radius: 12px;
+}
+
+.auth-card input:focus,
+.booking-card input:focus,
+.booking-card select:focus,
+.booking-card textarea:focus {
+  border-color: #2858e8;
+  box-shadow: 0 0 0 3px #dfe8ff;
+}
+
+.auth-card .button.primary,
+.booking-card .button.primary,
+.tracking-card .button.primary {
+  background: #2858e8;
+  border-color: #2858e8;
+  border-radius: 999px;
+  box-shadow: 0 10px 22px #2858e82b;
+}
+
+.auth-card .auth-switch button,
+.auth-note,
+.booking-intro > .text-button {
+  color: #2858e8;
+}
+
+.auth-note {
+  border-color: #e0e7f6;
+}
+
+.booking-layout {
+  max-width: 1240px;
+  margin: 54px auto;
+  padding-bottom: 70px;
+  gap: 72px;
+}
+
+.booking-intro h1 {
+  font-size: 48px;
+  letter-spacing: -2.3px;
+  line-height: 1.13;
+}
+
+.booking-doctor {
+  margin: 31px 0 24px;
+}
+
+.booking-doctor h3 {
+  color: #21345f;
+}
+
+.booking-doctor .doctor-avatar {
+  width: 52px;
+  height: 52px;
+  border: 4px solid #dce6ff;
+}
+
+.booking-summary {
+  background: #dfe8ff;
+  border-color: #cfdbfa;
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.booking-summary h4,
+.booking-summary > p,
+.booking-summary > small {
+  color: #687aa9;
+}
+
+.booking-summary > p svg {
+  color: #2858e8;
+}
+
+.booking-summary > div {
+  border-color: #cbd8f6;
+}
+
+.booking-summary > div > strong {
+  color: #2858e8;
+}
+
+.privacy-note {
+  color: #6f7f9f;
+}
+
+.booking-card {
+  padding: 33px;
+}
+
+.booking-steps {
+  border-color: #e0e7f5;
+}
+
+.booking-steps > div {
+  color: #a1acc2;
+}
+
+.booking-steps > div.active {
+  color: #2858e8;
+}
+
+.booking-steps span {
+  background: #edf2ff;
+}
+
+.booking-steps > div.active span {
+  color: #2858e8;
+  background: #dfe8ff;
+}
+
+.booking-card > .muted,
+.slot-section > small {
+  color: #7b87a0;
+}
+
+.booking-date-grid .mini-calendar {
+  border-color: #d9e3f5;
+  border-radius: 16px;
+  background: #f8faff;
+}
+
+.calendar-grid .weekday,
+.calendar-legend {
+  color: #8794ad;
+}
+
+.calendar-grid > button {
+  color: #64749b;
+  border-radius: 9px;
+}
+
+.calendar-grid > button:hover,
+.calendar-grid > button.is-today:not(.selected) {
+  background: #e6edff;
+  color: #2858e8;
+}
+
+.calendar-grid > button.selected,
+.slots > button.selected {
+  background: #2858e8;
+  border-color: #2858e8;
+}
+
+.slots > button {
+  border-color: #d4e0f5;
+  background: #f8faff;
+  color: #60739f;
+  border-radius: 10px;
+}
+
+.review-details > div {
+  border-color: #e1e8f5;
+}
+
+.review-details span {
+  color: #8491ab;
+}
+
+.review-details strong {
+  color: #2b3c67;
+}
+
+.tracking-card {
+  max-width: 650px;
+  margin: 58px auto;
+  padding: 44px;
+}
+
+.tracking-card > .public-eyebrow,
+.tracking-card > p,
+.tracking-times span,
+.patient-updates > div,
+.patient-updates small {
+  color: #71809d;
+}
+
+.tracking-card h1 {
+  color: #172544;
+}
+
+.reference {
+  background: #e2eaff;
+  color: #2858e8;
+  border-radius: 999px;
+}
+
+.tracking-times {
+  border-color: #d5e0f5;
+  background: #f5f8ff;
+  border-radius: 17px;
+}
+
+.tracking-times > div + div,
+.patient-updates {
+  border-color: #dfe7f5;
+}
+
+.tracking-times strong {
+  color: #2858e8;
+}
+
+.tracking-card .info-box {
+  background: #e5edff;
+  border-color: #d1defb;
+  color: #526da9;
+}
+
+.early-arrival-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin: 22px 0 18px;
+  padding: 15px 16px;
+  text-align: left;
+  color: #2858e8;
+  background: #e6edff;
+  border: 1px solid #cbd9fb;
+  border-radius: 15px;
+}
+
+.early-arrival-alert p {
+  color: #526da9;
+  font-size: 11px;
+  line-height: 1.75;
+  margin: 0;
+}
+
+.early-arrival-alert strong {
+  color: #1f3f9a;
+}
+
+.early-arrival-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 15px;
+  color: #2858e8;
+  background: #e6edff;
+  border: 1px solid #cbd9fb;
+  border-radius: 14px;
+}
+
+.early-arrival-success p {
+  color: #526da9;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.early-arrival-success strong {
+  color: #1f3f9a;
+}
+
+.early-arrival-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 650px) {
+  .early-arrival-actions .button {
+    flex: 1;
+  }
+
+  .early-arrival-actions .button.primary {
+    flex-basis: 100%;
+  }
+}
+
+/* Professional workspace */
+.app-shell {
+  background: #e9efff;
+}
+
+.sidebar {
+  background: #f8faff;
+  border-right-color: #dce5f7;
+}
+
+.brand,
+.sidebar .brand {
+  color: #111a2e;
+}
+
+.brand-mark {
+  background: #2858e8;
+}
+
+.brand-dot {
+  color: #6d8ce9;
+}
+
+.workspace,
+.stat-card,
+.doctor-strip,
+.queue-card,
+.next-card,
+.quick-card,
+.mini-calendar,
+.settings-panel,
+.service-card,
+.patient-directory-card,
+.practice-insights {
+  border-color: #dbe4f6;
+  box-shadow: 0 10px 26px #6076a30b;
+}
+
+.workspace {
+  background: #fff;
+}
+
+.practice-icon,
+.nav-item.active,
+.quick-icon,
+.notification-icon,
+.audit-icon {
+  background: #e2eaff;
+  color: #2858e8;
+}
+
+.nav-item {
+  color: #71809b;
+}
+
+.nav-item.active {
+  color: #2858e8;
+}
+
+.nav-item.active:before {
+  background: #2858e8;
+}
+
+.booking-promo,
+.access-banner {
+  background: #e3ebff;
+  border-color: #d2defb;
+}
+
+.booking-promo h4,
+.booking-promo p,
+.booking-promo button,
+.access-banner,
+.access-banner button {
+  color: #536a9e;
+}
+
+.topbar {
+  background: #f8faff;
+  border-bottom-color: #dce5f7;
+}
+
+.main-shell main {
+  background: #e9efff;
+}
+
+.breadcrumb,
+.clinic-time,
+.page-heading p,
+.doctor-identity p,
+.stat-top,
+.stat-card > p,
+.section-heading p {
+  color: #71809d;
+}
+
+.page-heading h1,
+.section-heading h2,
+.doctor-identity h3,
+.consultation-patient h2,
+.next-card h3,
+.quick-card > h3 {
+  color: #172544;
+}
+
+.button.primary,
+.heading-actions .primary,
+.next-card .primary {
+  background: #2858e8;
+  border-color: #2858e8;
+  box-shadow: 0 9px 20px #2858e82b;
+}
+
+.doctor-strip,
+.stat-card,
+.queue-card,
+.next-card,
+.quick-card,
+.mini-calendar,
+.settings-panel,
+.service-card,
+.patient-directory-card,
+.practice-insights {
+  background: #f8faff;
+  border-radius: 18px;
+}
+
+.consultation-card {
+  background: #dfe8ff;
+  border-color: #ccdafa;
+  border-radius: 18px;
+}
+
+.consultation-top > span:first-child,
+.consultation-patient p,
+.timer strong,
+.timer > span,
+.consultation-bottom > span {
+  color: #536da9;
+}
+
+.queue-card,
+.stat-card,
+.doctor-strip {
+  overflow: hidden;
+}
+
+.stat-icon.teal,
+.stat-icon.green,
+.stat-icon.amber,
+.stat-icon.rose {
+  background: #e2eaff;
+  color: #2858e8;
+}
+
+.service-symbol {
+  background: #e2eaff !important;
+  color: #2858e8 !important;
+}
+
+.service-card h2,
+.service-card h3,
+.service-meta strong {
+  color: #22345f;
+}
+
+.service-card > p,
+.service-meta > span,
+.notification-row p,
+.patient-directory-card p {
+  color: #7d8aa5;
+}
+
+.notification-row.unread {
+  background: #edf2ff;
+}
+
+.form-error {
+  border-color: #f0d8d3;
+}
+
+@media (max-width: 800px) {
+  .auth-layout,
+  .booking-layout {
+    margin-top: 38px;
+  }
+
+  .booking-card,
+  .auth-card {
+    border-radius: 20px;
+  }
+
+  .tracking-card {
+    border-radius: 20px;
+  }
+}
+
+/* Public experience refresh: a calm, app-like medical interface inspired by the reference screens. */
+.landing-page {
+  --landing-ink: #111a2e;
+  --landing-blue: #2858e8;
+  --landing-blue-dark: #1f46c4;
+  --landing-muted: #6e7891;
+  background: #e9efff;
+  color: var(--landing-ink);
+}
+
+.landing-page .public-header {
+  min-height: 76px;
+  padding: 18px max(5%, calc((100% - 1240px) / 2));
+  background: #e9effff2;
+  border-bottom: 1px solid #dbe4fb;
+  backdrop-filter: blur(16px);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  transition:
+    min-height 0.25s ease,
+    padding 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.landing-page .public-header.is-scrolled {
+  min-height: 64px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  background: #f4f7fff2;
+  box-shadow: 0 10px 30px #516ca51c;
+}
+
+.landing-page .brand {
+  color: #111a2e;
+  font-size: 30px;
+  letter-spacing: -1.6px;
+}
+
+.landing-page .brand-mark {
+  width: 33px;
+  height: 33px;
+  border-radius: 50%;
+  background: var(--landing-blue);
+}
+
+.landing-page .brand-dot,
+.landing-page .public-header nav a:hover {
+  color: var(--landing-blue);
+}
+
+.landing-page .public-header nav {
+  color: #68738c;
+  gap: 25px;
+}
+
+.landing-page .public-header nav a {
+  color: inherit;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.landing-page .public-header .staff-link {
+  color: #fff;
+  background: var(--landing-blue);
+  border-color: var(--landing-blue);
+  border-radius: 999px;
+  box-shadow: 0 8px 18px #2858e82b;
+}
+
+.landing-page .landing-hero {
+  max-width: 1240px;
+  padding: 68px 0 78px;
+  gap: 72px;
+}
+
+.landing-page .landing-hero-copy {
+  padding-top: 12px;
+}
+
+.landing-page .landing-kicker {
+  color: #5974c4;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+
+.landing-page .landing-kicker .green-dot {
+  background: #3e68e7;
+  box-shadow: 0 0 0 4px #d5e0ff;
+}
+
+.landing-page .landing-hero-copy h1 {
+  max-width: 600px;
+  color: #10182d;
+  font-size: clamp(48px, 5.4vw, 76px);
+  font-weight: 750;
+  letter-spacing: -4px;
+  line-height: 1.08;
+  margin: 23px 0 22px;
+}
+
+.landing-page .landing-hero-copy h1 em {
+  color: var(--landing-blue);
+  font-family: "Manrope", sans-serif;
+  font-size: 1em;
+  font-weight: 750;
+  letter-spacing: -4px;
+}
+
+.landing-page .hero-title-dot {
+  color: #ffbf52;
+  font-size: 31px;
+  margin-left: 8px;
+}
+
+.landing-page .landing-hero-copy > p {
+  max-width: 435px;
+  color: #6d7892;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.landing-page .landing-hero-actions {
+  gap: 13px;
+  margin-top: 27px;
+}
+
+.landing-page .landing-hero-actions .button,
+.landing-page .button.primary {
+  min-height: 46px;
+  padding: 13px 18px;
+  border-radius: 999px;
+  background: var(--landing-blue);
+  border-color: var(--landing-blue);
+  box-shadow: 0 11px 24px #2858e82b;
+}
+
+.landing-page .landing-hero-actions .button:hover,
+.landing-page .button.primary:hover {
+  background: var(--landing-blue-dark);
+  border-color: var(--landing-blue-dark);
+}
+
+.landing-page .landing-text-link {
+  color: #4e659d;
+  font-weight: 650;
+}
+
+.landing-page .landing-reassurance {
+  color: #5974c4;
+  margin-top: 25px;
+}
+
+.landing-page .landing-reassurance p {
+  color: #78839b;
+}
+
+.hero-proof-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 30px;
+  width: max-content;
+  max-width: 100%;
+  border: 1px solid #d3def9;
+  border-radius: 16px;
+  background: #f5f8ffb8;
+  box-shadow: 0 10px 24px #6076a30d;
+  overflow: hidden;
+}
+
+.hero-proof-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 92px;
+  padding: 12px 17px;
+  border-right: 1px solid #dce5f8;
+}
+
+.hero-proof-row > div:last-child {
+  border-right: 0;
+}
+
+.hero-proof-row strong {
+  color: #1c3e9f;
+  font-family: "Manrope", sans-serif;
+  font-size: 16px;
+  letter-spacing: -0.4px;
+}
+
+.hero-proof-row span {
+  color: #7a88a7;
+  font-size: 9px;
+}
+
+.landing-page .landing-hero-visual {
+  height: 530px;
+  margin-right: 28px;
+}
+
+.landing-page .portrait-arch {
+  border-radius: 36px;
+  background: #c7d5fa;
+  box-shadow: 0 24px 50px #546cae2b;
+}
+
+.landing-page .portrait-arch img {
+  filter: saturate(0.85) contrast(1.03);
+  object-position: center 17%;
+}
+
+.landing-page .portrait-gradient {
+  inset: 40% 0 0;
+  background: linear-gradient(transparent, #162854d9);
+}
+
+.landing-page .landing-doctor-name {
+  bottom: 37px;
+  left: 31px;
+}
+
+.landing-page .landing-doctor-name > span,
+.landing-page .landing-doctor-name p {
+  color: #dce6ff;
+}
+
+.landing-page .landing-doctor-name h2 {
+  font-size: 25px;
+}
+
+.landing-page .hero-care-tag,
+.landing-page .hero-hours-tag {
+  border-color: #d9e2fb;
+  box-shadow: 0 15px 35px #5067a52b;
+}
+
+.landing-page .hero-care-tag {
+  top: 88px;
+  left: -48px;
+  border-radius: 18px;
+  transform: rotate(-3deg);
+}
+
+.landing-page .hero-care-tag > span,
+.landing-page .hours-icon {
+  background: #e4ebff;
+  color: var(--landing-blue);
+}
+
+.landing-page .hero-care-tag > div,
+.landing-page .hero-hours-tag p {
+  color: #75819d;
+}
+
+.landing-page .hero-care-tag strong,
+.landing-page .hero-hours-tag strong {
+  color: #1d2a4a;
+}
+
+.landing-page .hero-hours-tag {
+  bottom: -22px;
+  left: 45px;
+  right: -30px;
+  border-radius: 18px;
+  padding: 16px 18px;
+}
+
+.landing-page .hero-hours-tag > .green-dot {
+  background: #4bb48a;
+}
+
+.landing-page .portrait-side-note {
+  color: #7186c7;
+}
+
+.landing-page .landing-practical {
+  background: #315de4;
+  border: 0;
+  color: white;
+  padding-top: 22px;
+  padding-bottom: 22px;
+}
+
+.landing-page .landing-practical > div > svg {
+  color: #b8c9ff;
+}
+
+.landing-page .landing-practical strong {
+  color: white;
+}
+
+.landing-page .landing-practical span {
+  color: #c5d2ff;
+}
+
+.landing-page .landing-section {
+  padding-top: 88px;
+  padding-bottom: 88px;
+}
+
+.landing-page .landing-section h2 {
+  color: #121c34;
+  font-weight: 750;
+  letter-spacing: -1.8px;
+}
+
+.landing-page .landing-section h2 em {
+  color: var(--landing-blue);
+  font-family: "Manrope", sans-serif;
+  font-weight: 750;
+}
+
+.landing-page .about-explanation > p,
+.landing-page .landing-section-heading > p,
+.landing-page .visit-steps p,
+.landing-page .contact-intro {
+  color: #77829b;
+}
+
+.landing-page .about-explanation .about-lead {
+  color: #34456f;
+}
+
+.landing-page .care-values > div > span,
+.landing-page .landing-service-icon {
+  background: #e1eaff;
+  border-color: #d4e0ff;
+  color: var(--landing-blue);
+}
+
+.landing-page .landing-services,
+.landing-page .landing-visit {
+  border-color: #d5dff6;
+}
+
+.landing-page .landing-service-grid {
+  gap: 16px;
+}
+
+.landing-page .landing-service-card {
+  background: #fff;
+  border: 1px solid #dce4f5;
+  border-radius: 20px;
+  padding: 24px 23px 0;
+  box-shadow: 0 12px 28px #6076a312;
+}
+
+.landing-page .landing-service-card:hover {
+  box-shadow: 0 18px 35px #526aa52b;
+}
+
+.landing-page .landing-service-card,
+.landing-page .care-values > div,
+.landing-page .contact-line,
+.landing-page .landing-hours,
+.landing-page .visit-steps article {
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.landing-page .care-values > div:hover {
+  transform: translateX(5px);
+}
+
+.landing-page .contact-line:hover {
+  transform: translateX(5px);
+  border-color: #b8c9f2;
+}
+
+.landing-page .visit-steps article:hover {
+  transform: translateY(-4px);
+}
+
+.landing-page .landing-hours:hover {
+  box-shadow: 0 18px 35px #526aa51b;
+}
+
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-page .landing-hero-copy > *,
+.landing-page .landing-hero-visual > * {
+  animation: landing-rise 0.7s ease both;
+}
+
+.landing-page .landing-hero-copy > :nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.landing-page .landing-hero-copy > :nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+.landing-page .landing-hero-copy > :nth-child(4) {
+  animation-delay: 0.24s;
+}
+
+.landing-page .landing-hero-copy > :nth-child(5) {
+  animation-delay: 0.32s;
+}
+
+.landing-page .landing-hero-visual > :nth-child(1) {
+  animation-delay: 0.15s;
+}
+
+.landing-page .landing-hero-visual > :nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.landing-page .landing-hero-visual > :nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.landing-page .landing-service-card:nth-child(2) .landing-service-icon,
+.landing-page .landing-service-card:nth-child(3) .landing-service-icon {
+  background: #e8edff;
+  color: #4669dc;
+}
+
+.landing-page .service-index,
+.landing-page .landing-service-card > p,
+.landing-page .landing-service-price > span,
+.landing-page .landing-price-note {
+  color: #8994ad;
+}
+
+.landing-page .landing-service-card h3 {
+  color: #172544;
+}
+
+.landing-page .landing-service-price > strong {
+  color: var(--landing-blue);
+}
+
+.landing-page .landing-service-card > button {
+  color: var(--landing-blue);
+  border-color: #e2e8f6;
+}
+
+.landing-page .visit-step-top {
+  border-color: #d5dff6;
+  color: var(--landing-blue);
+}
+
+.landing-page .visit-step-top > span {
+  color: #9aabe0;
+}
+
+.landing-page .visit-steps h3,
+.landing-page .contact-line strong,
+.landing-page .landing-hours-heading h3 {
+  color: #24345c;
+}
+
+.landing-page .contact-line,
+.landing-page .faq-list details {
+  border-color: #d5dff6;
+}
+
+.landing-page .contact-line > span,
+.landing-page .social-links a {
+  color: var(--landing-blue);
+  border-color: #d4e0ff;
+  background: #edf2ff;
+}
+
+.landing-page .landing-hours {
+  background: #dfe8ff;
+  border-color: #d0dcfb;
+  border-radius: 22px;
+}
+
+.landing-page .landing-hours-heading > span {
+  background: #cbd9ff;
+  border-color: #c2d1fb;
+  color: var(--landing-blue);
+}
+
+.landing-page .landing-hours-heading p,
+.landing-page .landing-hours-list > div,
+.landing-page .hours-footnote {
+  color: #7483aa;
+}
+
+.landing-page .landing-hours-list > div {
+  border-color: #cad7f5;
+}
+
+.landing-page .landing-hours-list strong {
+  color: #3757b3;
+}
+
+.landing-page .faq-list summary,
+.landing-page .faq-list details > p {
+  color: #53658f;
+}
+
+.landing-page .landing-final-cta {
+  background: #2858e8;
+  border-radius: 25px;
+  box-shadow: 0 20px 45px #2858e82e;
+}
+
+.landing-page .landing-final-cta .landing-kicker {
+  color: #c4d3ff;
+}
+
+.landing-page .landing-final-cta .button {
+  color: #244bc2;
+  background: white;
+  border-color: white;
+  border-radius: 999px;
+}
+
+.landing-page .landing-footer {
+  border-color: #d5dff6;
+}
+
+.landing-page .landing-footer > p,
+.landing-page .landing-footer > button {
+  color: #7180a2;
+}
+
+@media (max-width: 700px) {
+  .landing-page .public-header {
+    min-height: 68px;
+    padding: 16px 20px;
+  }
+
+  .landing-page .landing-hero {
+    padding: 44px 20px 62px;
+    gap: 36px;
+  }
+
+  .landing-page .landing-hero-copy h1 {
+    font-size: 47px;
+    letter-spacing: -2.8px;
+  }
+
+  .landing-page .landing-hero-copy h1 em {
+    letter-spacing: -2.8px;
+  }
+
+  .landing-page .hero-proof-row {
+    width: 100%;
+  }
+
+  .landing-page .hero-proof-row > div {
+    min-width: 0;
+    flex: 1;
+    padding: 11px 10px;
+  }
+
+  .landing-page .hero-proof-row strong {
+    font-size: 14px;
+  }
+
+  .landing-page .hero-proof-row span {
+    font-size: 8px;
+  }
+
+  .landing-page .landing-hero-visual {
+    height: 410px;
+    margin: 0 17px 0 10px;
+  }
+
+  .landing-page .hero-care-tag {
+    left: -15px;
+    top: 60px;
+    padding: 10px 12px;
+  }
+
+  .landing-page .hero-care-tag > span {
+    width: 30px;
+    height: 30px;
+  }
+
+  .landing-page .hero-hours-tag {
+    left: 22px;
+    right: -12px;
+    bottom: -17px;
+    padding: 12px;
+  }
+
+  .landing-page .portrait-side-note,
+  .landing-page .hero-heartline {
+    display: none;
+  }
+
+  .landing-page .landing-practical {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 22px 20px;
+  }
+
+  .landing-page .landing-section {
+    margin: 0;
+    padding: 66px 20px;
+  }
+
+  .landing-page .landing-section h2 {
+    font-size: 34px;
+  }
+
+  .landing-page .landing-section-heading {
+    display: block;
+  }
+
+  .landing-page .landing-section-heading > p {
+    margin-top: 18px;
+  }
+
+  .landing-page .landing-service-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-page .landing-final-cta {
+    margin: 0 20px 45px;
+    padding: 32px 24px;
+    display: block;
+  }
+
+  .landing-page .landing-final-cta .button {
+    margin-top: 25px;
+  }
+
+  .landing-page .landing-footer {
+    padding: 26px 20px 80px;
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+
+  .landing-page .landing-footer > button {
+    margin-left: 0;
+  }
+}
+
 /* Les traductions françaises sont plus longues : boutons et filtres peuvent revenir à la ligne. */
 .tracking-actions {
   flex-wrap: wrap;

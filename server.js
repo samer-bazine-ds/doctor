@@ -438,6 +438,7 @@ function audit(req, action, before, after) {
   });
 }
 function notify(a, message, recipient = "PATIENT", extra = {}) {
+  const patient = one("patients", a.patientId);
   put("notifications", {
     id: id(),
     appointmentId: a.id,
@@ -448,6 +449,8 @@ function notify(a, message, recipient = "PATIENT", extra = {}) {
     read: false,
     channel: "in-app",
     emailStatus: process.env.EMAIL_WEBHOOK ? "pending" : "not-configured",
+    smsStatus:
+      process.env.SMS_WEBHOOK && patient?.phone ? "pending" : "not-configured",
     ...extra,
   });
 }
@@ -1083,19 +1086,48 @@ app.post(
       )
     )
       throw Error("Ce patient a déjà reçu cette proposition.");
+    let delivery;
     transaction(() => {
+      const previousStart = next.estimatedStart;
+      const now = localTime(s.timezone);
+      const proposedStart = clock(
+        Math.max(minutes(now), minutes(next.scheduledStart) - minutesEarly),
+      );
+      next.estimatedStart = proposedStart;
+      next.estimatedEnd = clock(minutes(proposedStart) + next.duration);
+      next.updatedAt = new Date().toISOString();
+      put("appointments", next);
       notify(
         next,
-        `Le cabinet a terminé plus tôt. Vous pouvez arriver jusqu’à ${minutesEarly} minutes avant votre rendez-vous si cela vous convient. Sinon, gardez simplement votre horaire de ${next.scheduledStart}.`,
+        `Bonne nouvelle : le cabinet a terminé plus tôt. Votre heure estimée est maintenant ${next.estimatedStart} au lieu de ${previousStart}. Si vous êtes déjà à proximité, vous pouvez arriver plus tôt.`,
         "PATIENT",
-        { kind: "EARLY_ARRIVAL", minutesEarly },
+        {
+          kind: "EARLY_ARRIVAL",
+          minutesEarly,
+          previousStart,
+          newStart: next.estimatedStart,
+        },
       );
       audit(req, "Patient suivant prévenu d’une arrivée anticipée", null, {
         appointmentId: next.id,
         minutesEarly,
+        previousStart,
+        newStart: next.estimatedStart,
       });
+      const trackingUrl = `${publicOrigin || `http://${req.headers.host}`}/appointment/${next.id}?token=${encodeURIComponent(next.accessToken)}`;
+      const patient = one("patients", next.patientId);
+      const message = `Bonjour ${patient?.firstName || ""}, bonne nouvelle : votre heure estimée est maintenant ${next.estimatedStart} au lieu de ${previousStart}. Suivez votre rendez-vous ici : ${trackingUrl}`;
+      const phone = String(patient?.phone || "").replace(/[^\d+]/g, "");
+      delivery = {
+        appointmentId: next.id,
+        previousStart,
+        newStart: next.estimatedStart,
+        trackingUrl,
+        smsUrl: `sms:${phone}?body=${encodeURIComponent(message)}`,
+        whatsappUrl: `https://wa.me/${phone.replace(/^\+/, "")}?text=${encodeURIComponent(message)}`,
+      };
     });
-    res.json({ ok: true, appointmentId: next.id });
+    res.json({ ok: true, ...delivery });
   }),
 );
 app.post(
@@ -1414,6 +1446,39 @@ setInterval(async () => {
           });
           if (response.ok) {
             put("notifications", { ...n, emailStatus: "sent" });
+            save();
+          }
+        } catch {}
+      }
+    }
+    if (process.env.SMS_WEBHOOK) {
+      for (const n of all("notifications").filter(
+        (item) =>
+          item.smsStatus === "pending" &&
+          item.recipient !== "STAFF" &&
+          one("patients", item.patientId)?.phone,
+      )) {
+        try {
+          const patient = one("patients", n.patientId);
+          const response = await fetch(process.env.SMS_WEBHOOK, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(process.env.SMS_WEBHOOK_TOKEN
+                ? { Authorization: `Bearer ${process.env.SMS_WEBHOOK_TOKEN}` }
+                : {}),
+            },
+            body: JSON.stringify({
+              id: n.id,
+              to: patient.phone,
+              message: n.message,
+              appointmentId: n.appointmentId,
+              kind: n.kind || "APPOINTMENT",
+            }),
+            signal: AbortSignal.timeout(10000),
+          });
+          if (response.ok) {
+            put("notifications", { ...n, smsStatus: "sent", channel: "sms" });
             save();
           }
         } catch {}

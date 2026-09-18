@@ -1728,45 +1728,84 @@ function QueueForm({ date, mode, onClose, mutate, pub }) {
 
 function EarlyArrivalModal({ appointment, nextAppointment, options, mutate, onClose }) {
   const [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [delivery, setDelivery] = useState(null);
   return (
-    <Modal title="Prévenir le patient suivant ?" onClose={onClose}>
-      <p className="modal-copy">
-        {fullname(nextAppointment.patient)} peut arriver plus tôt si cela lui convient.
-        Son rendez-vous reste à {nextAppointment.scheduledStart} s’il préfère.
-      </p>
-      {error && <div className="form-error">{error}</div>}
-      <div className="form-actions">
-        <button className="button" onClick={onClose}>
-          Garder l’horaire
-        </button>
-        {options.map((minutes) => (
-          <button
-            className="button primary"
-            key={minutes}
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              setError("");
-              try {
-                await mutate(
-                  "/appointments/" + appointment.id + "/early-arrival",
-                  "POST",
-                  { minutes },
-                  "Patient prévenu de l’arrivée anticipée",
-                );
-                onClose();
-              } catch (e) {
-                setError(e.message);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            Prévenir {minutes} min avant
-          </button>
-        ))}
-      </div>
+    <Modal
+      title={delivery ? "Patient prévenu" : "Avancer le prochain rendez-vous ?"}
+      onClose={onClose}
+    >
+      {delivery ? (
+        <>
+          <div className="early-arrival-success">
+            <CheckCircle2 size={22} />
+            <p>
+              L’heure estimée de {fullname(nextAppointment.patient)} est passée de{" "}
+              <strong>{delivery.previousStart}</strong> à <strong>{delivery.newStart}</strong>.
+            </p>
+          </div>
+          <p className="modal-copy">
+            La page privée du patient est déjà actualisée. Envoyez-lui aussi le lien par
+            SMS ou WhatsApp s’il n’a pas la page ouverte.
+          </p>
+          <div className="form-actions early-arrival-actions">
+            <a className="button" href={delivery.smsUrl}>
+              <Smartphone size={16} /> SMS
+            </a>
+            <a
+              className="button"
+              href={delivery.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <MessageCircle size={16} /> WhatsApp
+            </a>
+            <button className="button primary" onClick={onClose}>
+              Terminer
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="modal-copy">
+            {fullname(nextAppointment.patient)} verra son heure estimée avancer et recevra
+            un message sur sa page privée. Vous pourrez ensuite lui envoyer le lien par SMS
+            ou WhatsApp.
+          </p>
+          {error && <div className="form-error">{error}</div>}
+          <div className="form-actions">
+            <button className="button" onClick={onClose}>
+              Garder l’horaire
+            </button>
+            {options.map((minutes) => (
+              <button
+                className="button primary"
+                key={minutes}
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setError("");
+                  try {
+                    const result = await mutate(
+                      "/appointments/" + appointment.id + "/early-arrival",
+                      "POST",
+                      { minutes },
+                      "Horaire avancé et patient prévenu",
+                    );
+                    setDelivery(result);
+                  } catch (e) {
+                    setError(e.message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Avancer de {minutes} min
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </Modal>
   );
 }
@@ -2850,10 +2889,18 @@ function AuditPage({ data }) {
 
 /** Navigation commune aux pages publiques et au parcours de réservation. */
 function PublicHeader({ go }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false),
+    [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 18);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
-    <header className="public-header">
+    <header className={`public-header ${scrolled ? "is-scrolled" : ""}`}>
       <a
         className="brand"
         href="/"
@@ -3018,6 +3065,20 @@ function Doctor({ pub, go }) {
                 <br />
                 <strong>Vos informations restent confidentielles.</strong>
               </p>
+            </div>
+            <div className="hero-proof-row" aria-label="Repères du cabinet">
+              <div>
+                <strong>{doctor.days.filter((day) => day.enabled).length}/7</strong>
+                <span>jours ouverts</span>
+              </div>
+              <div>
+                <strong>{pub.services.length}</strong>
+                <span>consultations</span>
+              </div>
+              <div>
+                <strong>DA</strong>
+                <span>tarifs clairs</span>
+              </div>
             </div>
           </div>
           <div className="landing-hero-visual">
@@ -3981,6 +4042,18 @@ function Tracking({ id, go }) {
                 <strong>{a.estimatedStart}</strong>
               </div>
             </div>
+            {a.notifications.some((n) => n.kind === "EARLY_ARRIVAL") && (
+              <div className="early-arrival-alert">
+                <ArrowUpRight size={19} />
+                <p>
+                  <strong>Votre rendez-vous a été avancé.</strong>
+                  <br />
+                  Le cabinet a terminé plus tôt. Votre heure estimée est maintenant{" "}
+                  <strong>{a.estimatedStart}</strong>. Si vous êtes proche, vous pouvez
+                  arriver plus tôt.
+                </p>
+              </div>
+            )}
             <Badge status={a.status} />
             <div className="review-details">
               {[
