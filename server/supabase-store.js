@@ -60,6 +60,44 @@ export function createSupabaseStore(env = process.env) {
     return data;
   }
 
+  async function users() {
+    const { data, error } = await client.from("users").select("*");
+    if (error) throw error;
+    return data;
+  }
+
+  async function sessions() {
+    const { data, error } = await client.from("sessions").select("*");
+    if (error) throw error;
+    return data;
+  }
+
+  async function putUser(user) {
+    const { error } = await client.from("users").upsert({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      salt: user.salt,
+      hash: user.hash,
+    });
+    if (error) throw error;
+  }
+
+  async function putSession(token, userId, expires) {
+    const { error } = await client.from("sessions").upsert({
+      token,
+      user_id: userId,
+      expires,
+    });
+    if (error) throw error;
+  }
+
+  async function deleteSession(token) {
+    const { error } = await client.from("sessions").delete().eq("token", token);
+    if (error) throw error;
+  }
+
   async function userForSession(token, now = Date.now()) {
     const { data, error } = await client
       .from("sessions")
@@ -78,6 +116,11 @@ export function createSupabaseStore(env = process.env) {
     putRecord,
     deleteRecords,
     findUserByEmail,
+    users,
+    sessions,
+    putUser,
+    putSession,
+    deleteSession,
     userForSession,
   };
 }

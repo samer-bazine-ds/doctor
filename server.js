@@ -205,9 +205,46 @@ if (supabaseStore) {
       ]);
     }
   }
+  for (const user of await supabaseStore.users())
+    db.run("INSERT OR REPLACE INTO users VALUES (?,?,?,?,?,?)", [
+      user.id,
+      user.email,
+      user.name,
+      user.role,
+      user.salt,
+      user.hash,
+    ]);
+  for (const session of await supabaseStore.sessions())
+    db.run("INSERT OR REPLACE INTO sessions VALUES (?,?,?)", [
+      session.token,
+      session.user_id,
+      session.expires,
+    ]);
 }
 const id = () => crypto.randomUUID();
 const hash = (password, salt) => crypto.scryptSync(password, salt, 64).toString("hex");
+const mirrorUser = (userId) => {
+  if (!supabaseStore) return;
+  const row = db.exec("SELECT * FROM users WHERE id=?", [userId]);
+  if (row.length) {
+    const user = Object.fromEntries(row[0].columns.map((key, index) => [key, row[0].values[0][index]]));
+    supabaseStore.putUser(user).catch((error) =>
+      console.error("Supabase user write failed:", error.message),
+    );
+  }
+};
+const mirrorSession = (token, userId, expires) => {
+  if (supabaseStore)
+    supabaseStore.putSession(token, userId, expires).catch((error) =>
+      console.error("Supabase session write failed:", error.message),
+    );
+};
+const removeMirroredSession = (token) => {
+  if (supabaseStore)
+    supabaseStore.deleteSession(token).catch((error) =>
+      console.error("Supabase session delete failed:", error.message),
+    );
+};
 // Du samedi au vendredi : les sept jours sont ouverts de 08:00 à 17:00.
 // La pause déjeuner reste protégée et peut être changée dans « Horaires ».
 const defaultDays = Array.from({ length: 7 }, () => ({
@@ -437,6 +474,7 @@ if (!db.exec("SELECT id FROM users LIMIT 1").length) {
     salt,
     hash(initialPassword, salt),
   ]);
+  mirrorUser(db.exec("SELECT id FROM users ORDER BY rowid DESC LIMIT 1")[0].values[0][0]);
   save();
   console.log(
     `Première connexion administrateur : ${process.env.ADMIN_EMAIL || "admin@pulse.local"} / ${initialPassword}`,
@@ -607,11 +645,10 @@ app.post(
     )
       throw Error("Adresse e-mail ou mot de passe incorrect.");
     const token = crypto.randomBytes(32).toString("hex");
-    db.run("INSERT INTO sessions VALUES (?,?,?)", [
-      crypto.createHash("sha256").update(token).digest("hex"),
-      u.id,
-      Date.now() + 8 * 3600000,
-    ]);
+    const sessionToken = crypto.createHash("sha256").update(token).digest("hex");
+    const sessionExpires = Date.now() + 8 * 3600000;
+    db.run("INSERT INTO sessions VALUES (?,?,?)", [sessionToken, u.id, sessionExpires]);
+    mirrorSession(sessionToken, u.id, sessionExpires);
     save();
     res.cookie("pulse_session", token, {
       httpOnly: true,
@@ -638,15 +675,17 @@ app.post(
         "Saisissez votre nom, un e-mail valide et un mot de passe d’au moins 12 caractères.",
       );
     const salt = crypto.randomBytes(16).toString("hex");
+    const userId = id();
     try {
       db.run("INSERT INTO users VALUES (?,?,?,?,?,?)", [
-        id(),
+        userId,
         clean(b.email).toLowerCase(),
         clean(b.name, 100),
         "PATIENT",
         salt,
         hash(b.password, salt),
       ]);
+      mirrorUser(userId);
       save();
     } catch {
       throw Error("Un compte existe déjà avec cette adresse e-mail.");
@@ -663,6 +702,7 @@ app.post("/api/logout", (req, res) => {
     db.run("DELETE FROM sessions WHERE token=?", [
       crypto.createHash("sha256").update(token).digest("hex"),
     ]);
+    removeMirroredSession(crypto.createHash("sha256").update(token).digest("hex"));
     save();
   }
   res.clearCookie("pulse_session");
@@ -1350,15 +1390,17 @@ app.post(
         "Saisissez un nom, un e-mail valide, un rôle et un mot de passe d’au moins 12 caractères.",
       );
     const salt = crypto.randomBytes(16).toString("hex");
+      const userId = id();
     transaction(() => {
       db.run("INSERT INTO users VALUES (?,?,?,?,?,?)", [
-        id(),
+          userId,
         clean(b.email).toLowerCase(),
         clean(b.name),
         b.role,
         salt,
         hash(b.password, salt),
       ]);
+        mirrorUser(userId);
       audit(req, "Compte professionnel créé", null, {
         email: b.email,
         role: b.role,
