@@ -17,7 +17,7 @@ function json(body, status = 200, headers = {}) {
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
-      "Access-Control-Allow-Origin": "https://76f093c2.pulse-clinic.pages.dev",
+      "Access-Control-Allow-Origin": "https://pulse-clinic.pages.dev",
       "Access-Control-Allow-Credentials": "true",
       "Access-Control-Allow-Headers": "Content-Type",
       "Access-Control-Allow-Methods": "GET,POST,PATCH,PUT,OPTIONS",
@@ -28,7 +28,13 @@ function json(body, status = 200, headers = {}) {
 
 function corsHeaders(request, env) {
   const origin = request.headers.get("Origin");
-  const allowed = env.FRONTEND_ORIGIN || "https://pulse-clinic.pages.dev";
+  const configured = env.FRONTEND_ORIGIN || "https://pulse-clinic.pages.dev";
+  const allowed =
+    origin &&
+    (origin === configured ||
+      /^https:\/\/[a-z0-9-]+\.pulse-clinic\.pages\.dev$/.test(origin))
+      ? origin
+      : configured;
   return {
     "Access-Control-Allow-Origin": origin === allowed ? origin : allowed,
     "Access-Control-Allow-Credentials": "true",
