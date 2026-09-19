@@ -4,3 +4,4 @@ compatibility_date = "2025-01-01"
 
 [vars]
 # Set SUPABASE_URL with `wrangler secret put SUPABASE_URL` for production.
+FRONTEND_ORIGIN = "https://pulse-clinic.pages.dev"

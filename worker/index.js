@@ -22,6 +22,18 @@ function json(body, status = 200, headers = {}) {
   });
 }
 
+function corsHeaders(request, env) {
+  const origin = request.headers.get("Origin");
+  const allowed = env.FRONTEND_ORIGIN || "https://pulse-clinic.pages.dev";
+  return {
+    "Access-Control-Allow-Origin": origin === allowed ? origin : allowed,
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET,POST,PATCH,PUT,OPTIONS",
+    Vary: "Origin",
+  };
+}
+
 function errorResponse(error) {
   return json({ error: error.message || "Une erreur est survenue." }, 400);
 }
@@ -207,7 +219,7 @@ async function currentUser(client, request, accessToken = cookie(request, "pulse
 }
 
 function authCookie(token, maxAge = 8 * 60 * 60) {
-  return `pulse_access=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+  return `pulse_access=${token}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=${maxAge}`;
 }
 
 async function body(request) {
@@ -222,12 +234,13 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { status: 204 });
-    if (url.pathname === "/api/health") return json({ ok: true, service: "pulse-clinic-api" });
+    if (url.pathname === "/api/health")
+      return json({ ok: true, service: "pulse-clinic-api" }, 200, corsHeaders(request, env));
 
     try {
       const client = store(env);
       if (url.pathname === "/api/me" && request.method === "GET")
-        return json({ user: await currentUser(client, request) });
+        return json({ user: await currentUser(client, request) }, 200, corsHeaders(request, env));
 
       if (url.pathname === "/api/login" && request.method === "POST") {
         const input = await body(request);
@@ -237,7 +250,11 @@ export default {
         });
         if (error || !data.session) throw Error("Adresse e-mail ou mot de passe incorrect.");
         const user = await currentUser(client, request, data.session.access_token);
-        return json({ user }, 200, { "Set-Cookie": authCookie(data.session.access_token) });
+        return json(
+          { user },
+          200,
+          { ...corsHeaders(request, env), "Set-Cookie": authCookie(data.session.access_token) },
+        );
       }
 
       if (url.pathname === "/api/register" && request.method === "POST") {
@@ -250,11 +267,15 @@ export default {
           options: { data: { name: String(input.name).trim(), role: "PATIENT" } },
         });
         if (error) throw error;
-        return json({ ok: true });
+        return json({ ok: true }, 200, corsHeaders(request, env));
       }
 
       if (url.pathname === "/api/logout" && request.method === "POST")
-        return json({ ok: true }, 200, { "Set-Cookie": authCookie("", 0) });
+        return json(
+          { ok: true },
+          200,
+          { ...corsHeaders(request, env), "Set-Cookie": authCookie("", 0) },
+        );
 
       if (url.pathname === "/api/public" && request.method === "GET")
         return json(await publicData(client));
