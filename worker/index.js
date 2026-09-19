@@ -17,7 +17,7 @@ function json(body, status = 200, headers = {}) {
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
-      "Access-Control-Allow-Origin": "https://pulse-clinic.pages.dev",
+      "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Credentials": "true",
       "Access-Control-Allow-Headers": "Content-Type",
       "Access-Control-Allow-Methods": "GET,POST,PATCH,PUT,OPTIONS",
