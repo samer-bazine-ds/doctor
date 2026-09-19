@@ -215,16 +215,18 @@ async function currentUser(client, request, accessToken = cookie(request, "pulse
   if (!token) return null;
   const { data, error } = await client.auth.getUser(token);
   if (error || !data.user) return null;
-  const { data: profile } = await client
+  const { data: profile, error: profileError } = await client
     .from("profiles")
     .select("name, role")
     .eq("id", data.user.id)
     .maybeSingle();
+  if (profileError) throw profileError;
+  if (!profile) throw Error("Le profil utilisateur n’est pas configuré.");
   return {
     id: data.user.id,
     email: data.user.email,
     name: profile?.name || data.user.user_metadata?.name || data.user.email,
-    role: profile?.role || "PATIENT",
+    role: profile.role,
   };
 }
 
