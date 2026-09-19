@@ -115,7 +115,10 @@ const apiBase = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 async function api(path, method = "GET", body) {
   const r = await fetch(apiBase + "/api" + path, {
     method,
-    credentials: "include",
+    credentials:
+      method === "GET" && (path === "/public" || path.startsWith("/slots"))
+        ? "omit"
+        : "include",
     headers: { "Content-Type": "application/json" },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
