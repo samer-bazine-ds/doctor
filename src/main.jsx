@@ -245,7 +245,6 @@ function App() {
       .then(([session, clinic]) => {
         if (session.status === "fulfilled") setUser(session.value.user);
         if (clinic.status === "fulfilled") setPub(clinic.value);
-        else setToast(clinic.reason?.message || "Le cabinet est momentanément indisponible.");
       })
       .finally(() => setLoaded(true));
     return () => window.removeEventListener("popstate", h);
