@@ -266,10 +266,11 @@ export default {
         const input = await body(request);
         if (!input.name || !/^\S+@\S+\.\S+$/.test(input.email || "") || String(input.password || "").length < 12)
           throw Error("Saisissez votre nom, un e-mail valide et un mot de passe d’au moins 12 caractères.");
-        const { error } = await client.auth.signUp({
+        const { error } = await client.auth.admin.createUser({
           email: String(input.email).trim().toLowerCase(),
           password: String(input.password),
-          options: { data: { name: String(input.name).trim(), role: "PATIENT" } },
+          email_confirm: true,
+          user_metadata: { name: String(input.name).trim(), role: "PATIENT" },
         });
         if (error) throw error;
         return json({ ok: true }, 200, corsHeaders(request, env));
