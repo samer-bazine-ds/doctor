@@ -32,7 +32,7 @@ function corsHeaders(request, env) {
   const allowed =
     origin &&
     (origin === configured ||
-      /^https:\/\/[a-z0-9-]+\.pulse-clinic\.pages\.dev$/.test(origin))
+      /^https:\/\/(?:[a-z0-9-]+\.)?pulse-clinic\.pages\.dev$/.test(origin))
       ? origin
       : configured;
   return {
