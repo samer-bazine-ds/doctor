@@ -241,12 +241,12 @@ function App() {
   useEffect(() => {
     const h = () => setPath(location.pathname);
     window.addEventListener("popstate", h);
-    Promise.all([api("/me"), api("/public")])
-      .then(([m, p]) => {
-        setUser(m.user);
-        setPub(p);
+    Promise.allSettled([api("/me"), api("/public")])
+      .then(([session, clinic]) => {
+        if (session.status === "fulfilled") setUser(session.value.user);
+        if (clinic.status === "fulfilled") setPub(clinic.value);
+        else setToast(clinic.reason?.message || "Le cabinet est momentanément indisponible.");
       })
-      .catch((e) => setToast(e.message))
       .finally(() => setLoaded(true));
     return () => window.removeEventListener("popstate", h);
   }, []);
