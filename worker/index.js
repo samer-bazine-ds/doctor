@@ -17,6 +17,10 @@ function json(body, status = 200, headers = {}) {
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "https://76f093c2.pulse-clinic.pages.dev",
+      "Access-Control-Allow-Credentials": "true",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Methods": "GET,POST,PATCH,PUT,OPTIONS",
       ...headers,
     },
   });
@@ -233,7 +237,8 @@ async function body(request) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (request.method === "OPTIONS") return new Response(null, { status: 204 });
+    if (request.method === "OPTIONS")
+      return new Response(null, { status: 204, headers: corsHeaders(request, env) });
     if (url.pathname === "/api/health")
       return json({ ok: true, service: "pulse-clinic-api" }, 200, corsHeaders(request, env));
 
